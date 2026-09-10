@@ -1,0 +1,69 @@
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+const Navbar = ({ onToggleSidebar }) => {
+  const navigate = useNavigate();
+
+  return (
+    <header className="top-navbar d-flex align-items-center justify-content-between">
+      <div className="d-flex align-items-center gap-3">
+        <button 
+          className="btn btn-outline-secondary btn-sm d-lg-none" 
+          onClick={onToggleSidebar}
+          aria-label="Toggle Navigation"
+        >
+          <i className="bi bi-list fs-5"></i>
+        </button>
+        <div className="d-none d-sm-block">
+          <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+            <i className="bi bi-shield-check me-1"></i>
+            MCA-II Project
+          </span>
+        </div>
+      </div>
+
+      <div className="d-flex align-items-center gap-3">
+        <div className="text-end d-none d-md-block">
+          <div className="fw-semibold text-dark small lh-sm">Farmer Account</div>
+          <small className="text-muted" style={{ fontSize: '0.75rem' }}>Active Session</small>
+        </div>
+
+        <div className="dropdown">
+          <button 
+            className="btn btn-light rounded-circle p-1 border d-flex align-items-center justify-content-center" 
+            style={{ width: '38px', height: '38px' }}
+            id="userMenuButton"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i className="bi bi-person-circle fs-5 text-fms-primary"></i>
+          </button>
+          <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuButton">
+            <li>
+              <div className="dropdown-item-text">
+                <div className="fw-bold">Sonali & Shraddha</div>
+                <small className="text-muted">MCA Group Project</small>
+              </div>
+            </li>
+            <li><hr className="dropdown-divider" /></li>
+            <li>
+              <Link className="dropdown-item" to="/dashboard">
+                <i className="bi bi-speedometer2 me-2"></i>Dashboard
+              </Link>
+            </li>
+            <li>
+              <button 
+                className="dropdown-item text-danger" 
+                onClick={() => navigate('/login')}
+              >
+                <i className="bi bi-box-arrow-right me-2"></i>Sign Out
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Navbar;
