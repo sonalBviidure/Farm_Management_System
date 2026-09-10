@@ -90,26 +90,28 @@ Farm-Management-System/
 
 ### 2. Backend Setup & Execution
 
-Open a PowerShell terminal and navigate to the project root:
+Open a terminal (Command Prompt or PowerShell) and navigate to the project root:
 
-```powershell
+```cmd
 # 1. Navigate to backend directory
-cd backend
+cd d:\SEM_3\FMS\backend
 
-# 2. Activate the existing virtual environment
-.\venv\Scripts\Activate.ps1
-
-# 3. (Optional) Configure MySQL
-# By default, SQLite is used for immediate development.
-# To connect to your MySQL database:
-# Copy .env.example to .env and set USE_MYSQL=True and your MySQL credentials:
-# DB_NAME=farm_db
-# DB_USER=root
-# DB_PASSWORD=your_password
-
-# 4. Run Django server
-python manage.py runserver 8000
+# 2. Run Django server directly using the virtual environment python:
+.\venv\Scripts\python.exe manage.py runserver 8000
 ```
+
+> **Alternatively, to activate the virtual environment first:**
+> - If using **Command Prompt (CMD)**:
+>   ```cmd
+>   venv\Scripts\activate.bat
+>   python manage.py runserver 8000
+>   ```
+> - If using **PowerShell**:
+>   ```powershell
+>   .\venv\Scripts\Activate.ps1
+>   python manage.py runserver 8000
+>   ```
+
 
 The Django REST API will be accessible at:
 - **API Status Endpoint:** [http://127.0.0.1:8000/api/status/](http://127.0.0.1:8000/api/status/)
