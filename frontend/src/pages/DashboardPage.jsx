@@ -207,8 +207,8 @@ const DashboardPage = () => {
               <div>
                 <h6 className="fw-bold mb-1">MCA-II Project Team</h6>
                 <p className="small text-white-50 mb-0">
-                  Sonali B. Vidure (Lead, ~65%)<br />
-                  Shraddha S. Gurav (~35%)
+                  Sonali B. Vidure (Team Leader)<br />
+                  Shraddha S. Gurav (Team Member)
                 </p>
               </div>
             </div>

@@ -22,7 +22,7 @@ const ReportsPage = () => {
         </div>
         <h4 className="fw-bold text-dark">Financial Reports &amp; Analytics</h4>
         <p className="text-muted mx-auto" style={{ maxWidth: '580px' }}>
-          This module is assigned to <strong>Sonali Bhauso Vidure</strong> (~65% scope, Team Leader) and will be implemented across <strong>Phases 6 &amp; 7</strong>.
+          This module will be created by <strong>Sonali Bhauso Vidure</strong> (Team Leader) across <strong>Phases 6 &amp; 7</strong>.
         </p>
 
         <div className="card bg-light border-0 rounded-3 p-4 mx-auto text-start mb-4" style={{ maxWidth: '580px' }}>

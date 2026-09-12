@@ -22,7 +22,7 @@ const ExpensesPage = () => {
         </div>
         <h4 className="fw-bold text-dark">Expense Management Module</h4>
         <p className="text-muted mx-auto" style={{ maxWidth: '580px' }}>
-          This module is assigned to <strong>Shraddha Suresh Gurav</strong> (~35% scope) and will be implemented in <strong>Phase 4</strong>.
+          This module will be created by <strong>Shraddha Suresh Gurav</strong> in <strong>Phase 4</strong>.
         </p>
 
         <div className="card bg-light border-0 rounded-3 p-4 mx-auto text-start mb-4" style={{ maxWidth: '580px' }}>

@@ -4,12 +4,12 @@ An MCA-II academic project designed to help farmers manage crop cultivation life
 
 ---
 
-## Team & Contribution Breakdown
+## Team & Work Distribution
 
-| Member Name | Role | Planned Contribution | Primary Responsibilities |
-| :--- | :--- | :---: | :--- |
-| **Sonali Bhauso Vidure** | **Team Leader** | **~65%** | Project Architecture, Git/Repository Management, Authentication, Dashboard & Financial Analytics, Visual Reports, AI Crop Recommendation, AI Profit Prediction, and Final Integration. |
-| **Shraddha Suresh Gurav** | **Team Member** | **~35%** | Crop Management (CRUD), Expense Tracking (CRUD), Harvest & Sales Management, AI Yield Prediction, Module Testing, and Documentation Support. |
+| Member Name | Role | Primary Responsibilities |
+| :--- | :--- | :--- |
+| **Sonali Bhauso Vidure** | **Team Leader** | Project Architecture, Git/Repository Management, Authentication, Dashboard & Financial Analytics, Visual Reports, AI Crop Recommendation, AI Profit Prediction, and Final Integration. |
+| **Shraddha Suresh Gurav** | **Team Member** | Crop Management (CRUD), Expense Tracking (CRUD), Harvest & Sales Management, AI Yield Prediction, Module Testing, and Documentation Support. |
 
 ---
 
