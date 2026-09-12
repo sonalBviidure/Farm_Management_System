@@ -1,8 +1,18 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const displayName = user?.full_name || user?.username || 'Farmer';
+  const subtitle = user?.location ? `${user.location} (${user.total_acres || 0} Acres)` : 'Active Session';
 
   return (
     <header className="top-navbar d-flex align-items-center justify-content-between">
@@ -24,8 +34,8 @@ const Navbar = ({ onToggleSidebar }) => {
 
       <div className="d-flex align-items-center gap-3">
         <div className="text-end d-none d-md-block">
-          <div className="fw-semibold text-dark small lh-sm">Farmer Account</div>
-          <small className="text-muted" style={{ fontSize: '0.75rem' }}>Active Session</small>
+          <div className="fw-semibold text-dark small lh-sm">{displayName}</div>
+          <small className="text-muted" style={{ fontSize: '0.75rem' }}>{subtitle}</small>
         </div>
 
         <div className="dropdown">
@@ -41,8 +51,8 @@ const Navbar = ({ onToggleSidebar }) => {
           <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuButton">
             <li>
               <div className="dropdown-item-text">
-                <div className="fw-bold">Sonali & Shraddha</div>
-                <small className="text-muted">MCA Group Project</small>
+                <div className="fw-bold">{displayName}</div>
+                <small className="text-muted">{user?.phone ? `+91 ${user.phone}` : 'MCA Group Project'}</small>
               </div>
             </li>
             <li><hr className="dropdown-divider" /></li>
@@ -54,7 +64,7 @@ const Navbar = ({ onToggleSidebar }) => {
             <li>
               <button 
                 className="dropdown-item text-danger" 
-                onClick={() => navigate('/login')}
+                onClick={handleSignOut}
               >
                 <i className="bi bi-box-arrow-right me-2"></i>Sign Out
               </button>

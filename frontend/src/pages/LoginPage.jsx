@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
   const [credentials, setCredentials] = useState({
-    username: 'farmer_demo',
-    password: 'password123',
+    username: '',
+    password: '',
   });
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    if (error) setError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Phase 1: Mock login to navigate to Dashboard. Full JWT authentication will be integrated in Phase 2.
-    navigate('/dashboard');
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(credentials);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Unable to sign in. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -33,18 +51,22 @@ const LoginPage = () => {
 
             <div className="card border-0 shadow-sm rounded-4 p-4 p-sm-5 bg-white">
               <div className="d-flex align-items-center justify-content-between mb-4">
-                <h4 className="fw-bold text-dark mb-0">Farmer Login</h4>
-                <span className="badge bg-success-subtle text-success border border-success-subtle">Phase 1 Preview</span>
+                <h4 className="fw-bold text-dark mb-0">Farmer Sign In</h4>
+                <span className="badge bg-success-subtle text-success border border-success-subtle">
+                  <i className="bi bi-shield-lock me-1"></i>Secure Auth
+                </span>
               </div>
 
-              <div className="alert alert-info py-2 px-3 small border-0 bg-light text-secondary mb-4">
-                <i className="bi bi-info-circle me-1 text-primary"></i>
-                Authentication endpoints will be implemented in <strong>Phase 2</strong>. Click <strong>Sign In</strong> to enter the dashboard.
-              </div>
+              {error && (
+                <div className="alert alert-danger py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+                  <i className="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                  <div>{error}</div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label small fw-semibold text-secondary">Username or Phone Number</label>
+                  <label className="form-label small fw-semibold text-secondary">Phone Number or Username</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-muted border-end-0">
                       <i className="bi bi-person"></i>
@@ -55,7 +77,7 @@ const LoginPage = () => {
                       name="username"
                       value={credentials.username}
                       onChange={handleChange}
-                      placeholder="e.g. 9876543210 or farmer_demo"
+                      placeholder="e.g. 9876543210 or username"
                       required
                     />
                   </div>
@@ -64,7 +86,6 @@ const LoginPage = () => {
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <label className="form-label small fw-semibold text-secondary mb-0">Password</label>
-                    <span className="small text-muted" style={{ fontSize: '0.78rem' }}>Default: password123</span>
                   </div>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-muted border-end-0">
@@ -76,14 +97,28 @@ const LoginPage = () => {
                       name="password"
                       value={credentials.password}
                       onChange={handleChange}
-                      placeholder="Enter password"
+                      placeholder="Enter your password"
                       required
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-fms-primary w-100 py-2 mb-3">
-                  <i className="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard
+                <button 
+                  type="submit" 
+                  className="btn btn-fms-primary w-100 py-2 mb-3 d-flex align-items-center justify-content-center gap-2"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-box-arrow-in-right"></i>
+                      <span>Sign In to Dashboard</span>
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -99,7 +134,7 @@ const LoginPage = () => {
 
             <div className="text-center mt-4">
               <small className="text-muted">
-                MCA-II Project &bull; Sonali B. Vidure &amp; Shraddha S. Gurav
+                MCA-II Project &bull; Sonali B. Vidure (Lead) &amp; Shraddha S. Gurav
               </small>
             </div>
           </div>

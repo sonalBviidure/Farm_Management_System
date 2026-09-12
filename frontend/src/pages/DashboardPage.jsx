@@ -1,7 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage = () => {
+  const { user } = useAuth();
+  const farmerName = user?.full_name || user?.username || 'Farmer';
+  const farmLocation = user?.location || 'Maharashtra';
+  const farmAcres = user?.total_acres ? `${user.total_acres} Acres` : 'Land Registered';
+
   // Dummy / Placeholder data for Phase 1 UI Foundation
   const stats = [
     {
@@ -47,7 +53,7 @@ const DashboardPage = () => {
   ];
 
   const recentCrops = [
-    { name: 'Sugarcane (Co 86032)', area: '2.5 Acres', sowingDate: '15 Jan 2026', status: 'Growing', health: 'Good' },
+    { name: 'Sugarcane (Co 86032)', area: '2.5 Acres', sowingDate: '15 Jan 2026', status: 'Growing', health: 'Optimal' },
     { name: 'Soybean (JS 335)', area: '1.5 Acres', sowingDate: '20 Jun 2026', status: 'Flowering', health: 'Optimal' },
     { name: 'Wheat (Lokwan)', area: '1.0 Acre', sowingDate: '10 Nov 2025', status: 'Ready for Harvest', health: 'Excellent' },
   ];
@@ -57,14 +63,14 @@ const DashboardPage = () => {
       {/* Welcome Banner */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold text-dark mb-1">Farmer Dashboard</h2>
+          <h2 className="fw-bold text-dark mb-1">Welcome back, {farmerName}! 👋</h2>
           <p className="text-muted mb-0 small">
             Farm operations overview, cultivation metrics, and financial summary
           </p>
         </div>
         <div className="d-flex align-items-center gap-2">
           <span className="badge bg-light text-dark border px-3 py-2">
-            <i className="bi bi-geo-alt-fill text-danger me-1"></i> Kolhapur Farm (5.5 Acres)
+            <i className="bi bi-geo-alt-fill text-danger me-1"></i> {farmLocation} ({farmAcres})
           </span>
           <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
             Season: Kharif / Rabi 2026
