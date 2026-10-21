@@ -1,0 +1,248 @@
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from .models import (
+    FarmerProfile, Field, Crop, Expense, Harvest, Sale,
+    FinancialAnalysis, CropRecommendation, YieldPrediction, ProfitPrediction
+)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Auth / Farmer Profile Serializers  (Phase 2 — Sonali)
+# ─────────────────────────────────────────────────────────────────
+
+class FarmerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerProfile
+        fields = ['phone', 'location', 'total_acres', 'created_at']
+
+
+class FarmerUserSerializer(serializers.ModelSerializer):
+    """
+    Public representation of a farmer, joining User and FarmerProfile.
+    """
+    phone = serializers.CharField(source='farmer_profile.phone', read_only=True)
+    location = serializers.CharField(source='farmer_profile.location', read_only=True)
+    total_acres = serializers.DecimalField(
+        source='farmer_profile.total_acres',
+        max_digits=6,
+        decimal_places=2,
+        read_only=True
+    )
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'full_name', 'email', 'phone', 'location', 'total_acres', 'date_joined']
+
+    def get_full_name(self, obj):
+        name = obj.get_full_name()
+        return name if name else obj.username
+
+
+class UserRegistrationSerializer(serializers.Serializer):
+    """
+    Validates farmer registration and atomically provisions both
+    the core User record and the domain FarmerProfile record.
+    """
+    full_name = serializers.CharField(max_length=150, required=True)
+    phone = serializers.CharField(max_length=15, required=True)
+    location = serializers.CharField(max_length=255, required=True)
+    total_acres = serializers.DecimalField(max_digits=6, decimal_places=2, required=True)
+    password = serializers.CharField(write_only=True, min_length=6, required=True)
+    confirm_password = serializers.CharField(write_only=True, min_length=6, required=True)
+
+    def validate_phone(self, value):
+        cleaned_phone = value.strip().replace(" ", "").replace("-", "")
+        if not cleaned_phone.isdigit() or len(cleaned_phone) < 8:
+            raise serializers.ValidationError("Enter a valid mobile phone number.")
+        if FarmerProfile.objects.filter(phone=cleaned_phone).exists():
+            raise serializers.ValidationError("A farmer account with this phone number already exists.")
+        return cleaned_phone
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data
+
+    def create(self, validated_data):
+        phone = validated_data['phone']
+        full_name = validated_data['full_name'].strip()
+        location = validated_data['location'].strip()
+        total_acres = validated_data['total_acres']
+        password = validated_data['password']
+
+        name_parts = full_name.split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+        username = phone
+        if User.objects.filter(username=username).exists():
+            username = f"{phone}_{User.objects.count() + 1}"
+
+        user = User.objects.create_user(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            password=password
+        )
+
+        FarmerProfile.objects.create(
+            user=user,
+            phone=phone,
+            location=location,
+            total_acres=total_acres
+        )
+
+        return user
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Supports logging in with either phone number or username.
+    """
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Field & Crop Serializers  (Phase 3 — Shraddha)
+# ─────────────────────────────────────────────────────────────────
+
+class FieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Field
+        fields = ['id', 'field_name', 'land_area', 'soil_type', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class CropSerializer(serializers.ModelSerializer):
+    field_name = serializers.CharField(source='field.field_name', read_only=True)
+
+    class Meta:
+        model = Crop
+        fields = [
+            'id', 'field', 'field_name', 'crop_name', 'variety',
+            'season', 'sowing_date', 'status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'field_name', 'created_at', 'updated_at']
+
+    def validate_field(self, field):
+        """Ensure the selected field belongs to the requesting farmer."""
+        request = self.context.get('request')
+        if request and field.farmer != request.user:
+            raise serializers.ValidationError("You do not own this field.")
+        return field
+
+
+# ─────────────────────────────────────────────────────────────────
+# Expense Serializer  (Phase 4 — Shraddha)
+# ─────────────────────────────────────────────────────────────────
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expense
+        fields = [
+            'id', 'crop', 'expense_category', 'description',
+            'amount', 'expense_date', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def validate_crop(self, crop):
+        request = self.context.get('request')
+        if request and crop.farmer != request.user:
+            raise serializers.ValidationError("You do not own this crop.")
+        return crop
+
+
+# ─────────────────────────────────────────────────────────────────
+# Harvest & Sale Serializers  (Phase 5 — Shraddha)
+# ─────────────────────────────────────────────────────────────────
+
+class SaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sale
+        fields = [
+            'id', 'harvest', 'quantity_sold', 'selling_price',
+            'total_amount', 'sale_date', 'buyer_name', 'created_at'
+        ]
+        read_only_fields = ['id', 'total_amount', 'created_at']
+
+
+class HarvestSerializer(serializers.ModelSerializer):
+    sales = SaleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Harvest
+        fields = [
+            'id', 'crop', 'harvest_date', 'quantity_harvested',
+            'unit', 'created_at', 'sales'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def validate_crop(self, crop):
+        request = self.context.get('request')
+        if request and crop.farmer != request.user:
+            raise serializers.ValidationError("You do not own this crop.")
+        return crop
+
+
+# ─────────────────────────────────────────────────────────────────
+# Financial Analysis Serializer  (Phase 6 — Sonali)
+# ─────────────────────────────────────────────────────────────────
+
+class FinancialAnalysisSerializer(serializers.ModelSerializer):
+    crop_name = serializers.CharField(source='crop.crop_name', read_only=True)
+    season = serializers.CharField(source='crop.season', read_only=True)
+
+    class Meta:
+        model = FinancialAnalysis
+        fields = [
+            'id', 'crop', 'crop_name', 'season',
+            'total_cost', 'total_revenue', 'profit_loss',
+            'cost_per_acre', 'profit_per_acre', 'calculated_at'
+        ]
+        read_only_fields = ['id', 'crop_name', 'season', 'calculated_at']
+
+
+# ─────────────────────────────────────────────────────────────────
+# AI Serializers  (Phase 8 — Sonali & Shraddha)
+# ─────────────────────────────────────────────────────────────────
+
+class CropRecommendationSerializer(serializers.ModelSerializer):
+    """Phase 8b — Sonali: AI Crop Recommendation input/output."""
+
+    class Meta:
+        model = CropRecommendation
+        fields = [
+            'id', 'soil_type', 'season', 'weather_conditions',
+            'irrigation_type', 'recommended_crop', 'recommendation_date'
+        ]
+        read_only_fields = ['id', 'recommended_crop', 'recommendation_date']
+
+
+class YieldPredictionSerializer(serializers.ModelSerializer):
+    """Phase 8a — Shraddha: AI Yield Prediction input/output."""
+    crop_name = serializers.CharField(source='crop.crop_name', read_only=True)
+
+    class Meta:
+        model = YieldPrediction
+        fields = [
+            'id', 'crop', 'crop_name', 'land_area', 'season',
+            'soil_type', 'fertilizer_use', 'rainfall',
+            'predicted_yield', 'prediction_date'
+        ]
+        read_only_fields = ['id', 'crop_name', 'predicted_yield', 'prediction_date']
+
+
+class ProfitPredictionSerializer(serializers.ModelSerializer):
+    """Phase 8c — Sonali: AI Profit Prediction input/output."""
+    crop_name = serializers.CharField(source='crop.crop_name', read_only=True)
+
+    class Meta:
+        model = ProfitPrediction
+        fields = [
+            'id', 'crop', 'crop_name', 'estimated_cost',
+            'predicted_yield', 'estimated_selling_price',
+            'predicted_profit', 'prediction_date'
+        ]
+        read_only_fields = ['id', 'crop_name', 'predicted_profit', 'prediction_date']

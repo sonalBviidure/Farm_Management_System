@@ -1,50 +1,91 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+
+const LOGIN_BG = 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600&q=80';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const { t, language, toggleLanguage } = useLanguage();
+
   const [credentials, setCredentials] = useState({
-    username: 'farmer_demo',
-    password: 'password123',
+    username: '',
+    password: '',
   });
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    if (error) setError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Phase 1: Mock login to navigate to Dashboard. Full JWT authentication will be integrated in Phase 2.
-    navigate('/dashboard');
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(credentials);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || (language === 'mr' ? 'लॉगिन अयशस्वी. कृपया तपशील तपासा.' : 'Unable to sign in. Please check your credentials.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5">
+    <div 
+      className="min-vh-100 d-flex align-items-center justify-content-center py-5 hero-bg"
+      style={{ backgroundImage: `url(${LOGIN_BG})` }}
+    >
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-md-7 col-lg-5">
-            <div className="text-center mb-4">
-              <Link to="/" className="text-decoration-none d-inline-flex align-items-center gap-2 mb-2">
-                <i className="bi bi-tree-fill text-success fs-2"></i>
-                <span className="fs-4 fw-bold text-dark">Farm Management System</span>
+            {/* Top Bar with brand & language toggle */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <Link to="/" className="text-decoration-none d-inline-flex align-items-center gap-2 text-white">
+                <i className="bi bi-tree-fill text-warning fs-3"></i>
+                <span className="fs-5 fw-bold">Farm Management System</span>
               </Link>
-              <p className="text-muted small">Sign in to manage your farm and view financial records</p>
+              <button
+                className="lang-toggle-btn"
+                onClick={toggleLanguage}
+                title="Switch Language / भाषा बदला"
+              >
+                <i className="bi bi-translate"></i>
+                {language === 'en' ? '🇮🇳 मराठी' : '🇬🇧 English'}
+              </button>
             </div>
 
-            <div className="card border-0 shadow-sm rounded-4 p-4 p-sm-5 bg-white">
+            <div className="card border-0 shadow-lg rounded-4 p-4 p-sm-5 bg-white">
               <div className="d-flex align-items-center justify-content-between mb-4">
-                <h4 className="fw-bold text-dark mb-0">Farmer Login</h4>
-                <span className="badge bg-success-subtle text-success border border-success-subtle">Phase 1 Preview</span>
+                <h4 className="fw-bold text-dark mb-0">
+                  {language === 'mr' ? 'शेतकरी प्रवेश' : 'Farmer Sign In'}
+                </h4>
+                <span className="badge bg-success-subtle text-success border border-success-subtle">
+                  <i className="bi bi-shield-lock me-1"></i>Secure Auth
+                </span>
               </div>
 
-              <div className="alert alert-info py-2 px-3 small border-0 bg-light text-secondary mb-4">
-                <i className="bi bi-info-circle me-1 text-primary"></i>
-                Authentication endpoints will be implemented in <strong>Phase 2</strong>. Click <strong>Sign In</strong> to enter the dashboard.
-              </div>
+              {error && (
+                <div className="alert alert-danger py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+                  <i className="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                  <div>{error}</div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label small fw-semibold text-secondary">Username or Phone Number</label>
+                  <label className="form-label small fw-semibold text-secondary">
+                    {language === 'mr' ? 'फोन नंबर किंवा वापरकर्ता नाव' : 'Phone Number or Username'}
+                  </label>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-muted border-end-0">
                       <i className="bi bi-person"></i>
@@ -55,7 +96,7 @@ const LoginPage = () => {
                       name="username"
                       value={credentials.username}
                       onChange={handleChange}
-                      placeholder="e.g. 9876543210 or farmer_demo"
+                      placeholder={language === 'mr' ? 'उदा. 9876543210 किंवा नाव' : 'e.g. 9876543210 or username'}
                       required
                     />
                   </div>
@@ -63,8 +104,9 @@ const LoginPage = () => {
 
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-1">
-                    <label className="form-label small fw-semibold text-secondary mb-0">Password</label>
-                    <span className="small text-muted" style={{ fontSize: '0.78rem' }}>Default: password123</span>
+                    <label className="form-label small fw-semibold text-secondary mb-0">
+                      {language === 'mr' ? 'संकेतशब्द (पासवर्ड)' : 'Password'}
+                    </label>
                   </div>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-muted border-end-0">
@@ -76,30 +118,48 @@ const LoginPage = () => {
                       name="password"
                       value={credentials.password}
                       onChange={handleChange}
-                      placeholder="Enter password"
+                      placeholder={language === 'mr' ? 'संकेतशब्द टाका' : 'Enter your password'}
                       required
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-fms-primary w-100 py-2 mb-3">
-                  <i className="bi bi-box-arrow-in-right me-2"></i>Sign In to Dashboard
+                <button 
+                  type="submit" 
+                  className="btn btn-fms-primary w-100 py-2 mb-3 d-flex align-items-center justify-content-center gap-2"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      <span>{language === 'mr' ? 'प्रवेश करत आहे...' : 'Signing in...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-box-arrow-in-right"></i>
+                      <span>{language === 'mr' ? 'डॅशबोर्डमध्ये प्रवेश करा' : 'Sign In to Dashboard'}</span>
+                    </>
+                  )}
                 </button>
               </form>
 
               <div className="text-center mt-3 pt-3 border-top">
                 <p className="small text-muted mb-1">
-                  New farmer? <Link to="/register" className="text-success fw-semibold text-decoration-none">Create an Account</Link>
+                  {language === 'mr' ? 'नवीन शेतकरी?' : 'New farmer?'}{' '}
+                  <Link to="/register" className="text-success fw-semibold text-decoration-none">
+                    {language === 'mr' ? 'नवीन खाते तयार करा' : 'Create an Account'}
+                  </Link>
                 </p>
                 <Link to="/" className="small text-secondary text-decoration-none">
-                  <i className="bi bi-arrow-left me-1"></i>Back to Home
+                  <i className="bi bi-arrow-left me-1"></i>
+                  {language === 'mr' ? 'मुख्य पृष्ठावर जा' : 'Back to Home'}
                 </Link>
               </div>
             </div>
 
             <div className="text-center mt-4">
-              <small className="text-muted">
-                MCA-II Project &bull; Sonali B. Vidure &amp; Shraddha S. Gurav
+              <small className="text-white-50">
+                MCA-II Project &bull; Sonali B. Vidure (Lead) &amp; Shraddha S. Gurav · PVPIT Budhgaon
               </small>
             </div>
           </div>
