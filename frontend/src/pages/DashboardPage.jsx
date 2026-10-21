@@ -1,20 +1,88 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getDashboardSummary } from '../services/api';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  PointElement,
+  LineElement,
+} from 'chart.js';
+import { Doughnut, Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  PointElement,
+  LineElement
+);
+
+// A simple field background for the dashboard banner
+const DASHBOARD_BG = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1400&q=70';
+
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+
   const farmerName = user?.full_name || user?.username || 'Farmer';
   const farmLocation = user?.location || 'Maharashtra';
-  const farmAcres = user?.total_acres ? `${user.total_acres} Acres` : 'Land Registered';
+  const farmAcres = user?.total_acres ? `${user.total_acres} ${t('acres')}` : t('registered');
 
-  // Dummy / Placeholder data for Phase 1 UI Foundation
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [dashboardData, setDashboardData] = useState({
+    summary: {
+      total_crops: 0,
+      active_crops: 0,
+      total_fields: 0,
+      total_expenses: 0,
+      total_revenue: 0,
+      net_profit: 0,
+    },
+    recent_crops: [],
+    season_breakdown: [],
+    expense_by_category: [],
+  });
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  async function loadDashboard() {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getDashboardSummary();
+      if (data && data.summary) {
+        setDashboardData(data);
+      }
+    } catch (e) {
+      console.warn('Dashboard fetch error:', e.message);
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const { summary, recent_crops, season_breakdown } = dashboardData;
+
   const stats = [
     {
       id: 'crops',
-      title: 'Total Crops',
-      value: '4 Active Crops',
-      subtitle: 'Sugarcane, Soybean, Wheat, Cotton',
+      title: t('totalCrops'),
+      value: `${summary.active_crops} ${language === 'mr' ? 'सक्रिय' : 'Active'}`,
+      subtitle: `${summary.total_crops} ${language === 'mr' ? 'एकूण,' : 'Total,'} ${summary.total_fields} ${language === 'mr' ? 'शेत' : 'Fields'}`,
       icon: 'bi-flower2',
       color: 'text-success',
       bgColor: 'bg-success-subtle',
@@ -22,9 +90,9 @@ const DashboardPage = () => {
     },
     {
       id: 'expenses',
-      title: 'Total Expenses',
-      value: '₹ 45,200',
-      subtitle: 'Fertilizers, Seeds, Labor & Fuel',
+      title: t('totalExpenses'),
+      value: `₹ ${Number(summary.total_expenses).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtitle: language === 'mr' ? 'खते, बियाणे, मजुरी व यंत्रे' : 'Fertilizers, Seeds, Labor & Machinery',
       icon: 'bi-wallet2',
       color: 'text-danger',
       bgColor: 'bg-danger-subtle',
@@ -32,9 +100,9 @@ const DashboardPage = () => {
     },
     {
       id: 'revenue',
-      title: 'Total Revenue',
-      value: '₹ 1,15,000',
-      subtitle: 'Recorded from harvested batches',
+      title: t('totalRevenue'),
+      value: `₹ ${Number(summary.total_revenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtitle: language === 'mr' ? 'काढणी बॅचपासून नोंदवलेले' : 'Recorded from harvested batches sold',
       icon: 'bi-cash-coin',
       color: 'text-primary',
       bgColor: 'bg-primary-subtle',
@@ -42,179 +110,377 @@ const DashboardPage = () => {
     },
     {
       id: 'profit',
-      title: 'Total Profit / Loss',
-      value: '+ ₹ 69,800',
-      subtitle: 'Net margin (Revenue - Expenses)',
-      icon: 'bi-graph-up-arrow',
-      color: 'text-success',
-      bgColor: 'bg-success-subtle',
+      title: t('netProfit'),
+      value: `${summary.net_profit >= 0 ? '+' : ''}₹ ${Number(summary.net_profit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtitle: summary.net_profit >= 0
+        ? (language === 'mr' ? 'फायदेशीर लागवड मार्जिन' : 'Profitable cultivation margin')
+        : (language === 'mr' ? 'खर्च महसुलापेक्षा जास्त' : 'Expenditure exceeds realized sales'),
+      icon: summary.net_profit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow',
+      color: summary.net_profit >= 0 ? 'text-success' : 'text-danger',
+      bgColor: summary.net_profit >= 0 ? 'bg-success-subtle' : 'bg-danger-subtle',
       route: '/reports',
     },
   ];
 
-  const recentCrops = [
-    { name: 'Sugarcane (Co 86032)', area: '2.5 Acres', sowingDate: '15 Jan 2026', status: 'Growing', health: 'Optimal' },
-    { name: 'Soybean (JS 335)', area: '1.5 Acres', sowingDate: '20 Jun 2026', status: 'Flowering', health: 'Optimal' },
-    { name: 'Wheat (Lokwan)', area: '1.0 Acre', sowingDate: '10 Nov 2025', status: 'Ready for Harvest', health: 'Excellent' },
-  ];
-
   return (
     <div className="container-fluid p-0">
-      {/* Welcome Banner */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-          <h2 className="fw-bold text-dark mb-1">Welcome back, {farmerName}! 👋</h2>
-          <p className="text-muted mb-0 small">
-            Farm operations overview, cultivation metrics, and financial summary
-          </p>
-        </div>
-        <div className="d-flex align-items-center gap-2">
-          <span className="badge bg-light text-dark border px-3 py-2">
-            <i className="bi bi-geo-alt-fill text-danger me-1"></i> {farmLocation} ({farmAcres})
-          </span>
-          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
-            Season: Kharif / Rabi 2026
-          </span>
+
+      {/* ── Welcome Banner with subtle farm bg ──────────────── */}
+      <div
+        className="rounded-4 p-4 mb-4 text-white position-relative overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(135deg, rgba(27,67,50,0.92) 0%, rgba(45,106,79,0.88) 100%), url(${DASHBOARD_BG})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="row align-items-center g-3">
+          <div className="col">
+            <h4 className="fw-bold mb-1">
+              {t('welcomeBack')}, {farmerName}! 🌾
+            </h4>
+            <p className="mb-0 small" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              {language === 'mr'
+                ? 'थेट परिचालन मेट्रिक्स, सक्रिय पीक ट्रॅकिंग आणि आर्थिक विश्लेषण.'
+                : 'Live operational metrics, active crop tracking, and financial analytics.'}
+            </p>
+          </div>
+          <div className="col-auto d-flex align-items-center gap-2 flex-wrap">
+            <span className="badge bg-white text-dark border px-3 py-2">
+              <i className="bi bi-geo-alt-fill text-danger me-1"></i>
+              {farmLocation} ({farmAcres})
+            </span>
+            <button
+              className="btn btn-light btn-sm px-3"
+              onClick={loadDashboard}
+              disabled={loading}
+              title={language === 'mr' ? 'रिफ्रेश करा' : 'Refresh metrics'}
+            >
+              <i className={`bi bi-arrow-clockwise me-1 ${loading ? 'spin' : ''}`}></i>
+              {t('refresh')}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Phase 1 Foundation Banner */}
-      <div className="alert alert-success border-0 shadow-sm d-flex align-items-center gap-3 mb-4 rounded-3 p-3">
-        <i className="bi bi-info-circle-fill fs-3 text-success"></i>
-        <div className="small">
-          <strong className="d-block">Phase 1: Basic Architecture &amp; UI Foundation Active</strong>
-          <span className="text-muted">
-            The values shown below are placeholder metrics. Live database integration and dynamic calculations will be connected in subsequent phases according to the project roadmap.
-          </span>
+      {error && (
+        <div className="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          {error}
+          <button type="button" className="btn-close" onClick={() => setError('')}></button>
         </div>
-      </div>
+      )}
 
-      {/* 4 Summary Stat Cards */}
+      {/* ── 4 KPI Cards ─────────────────────────────────────── */}
       <div className="row g-3 mb-4">
         {stats.map((stat) => (
           <div key={stat.id} className="col-12 col-sm-6 col-xl-3">
             <div className="kpi-card h-100 d-flex flex-column justify-content-between">
               <div>
                 <div className="d-flex align-items-center justify-content-between mb-2">
-                  <span className="text-secondary small fw-semibold text-uppercase">{stat.title}</span>
+                  <span className="text-secondary small fw-semibold text-uppercase" style={{ fontSize: '0.7rem' }}>
+                    {stat.title}
+                  </span>
                   <div className={`kpi-icon-box ${stat.bgColor} ${stat.color}`}>
                     <i className={`bi ${stat.icon}`}></i>
                   </div>
                 </div>
-                <h3 className="fw-bold text-dark mb-1">{stat.value}</h3>
+                <h3 className="fw-bold text-dark mb-1">
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm text-secondary"></span>
+                  ) : (
+                    stat.value
+                  )}
+                </h3>
                 <p className="text-muted small mb-0">{stat.subtitle}</p>
               </div>
               <div className="pt-3 mt-3 border-top d-flex justify-content-between align-items-center">
                 <Link to={stat.route} className="text-decoration-none small text-success fw-semibold">
-                  View Details <i className="bi bi-chevron-right ms-1"></i>
+                  {language === 'mr' ? 'तपशील पहा' : 'View Details'}{' '}
+                  <i className="bi bi-chevron-right ms-1"></i>
                 </Link>
-                <span className="text-muted" style={{ fontSize: '0.75rem' }}>Demo Metric</span>
+                <span className="badge bg-light text-muted border" style={{ fontSize: '0.68rem' }}>
+                  {language === 'mr' ? 'लाइव्ह डेटा' : 'Live Data'}
+                </span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Activity and Quick Actions */}
+      {/* ── Main Content Area ────────────────────────────────── */}
       <div className="row g-4">
-        {/* Left Column: Sample Active Crops Preview */}
+        {/* Left: Recent Crops Table */}
         <div className="col-lg-8">
-          <div className="card border-0 shadow-sm rounded-3">
+          <div className="card border-0 shadow-sm rounded-4 bg-white mb-4">
             <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
               <h6 className="fw-bold mb-0 text-dark">
                 <i className="bi bi-flower2 text-success me-2"></i>
-                Active Crops Preview (Sample)
+                {language === 'mr' ? 'सक्रिय पिके व देखरेख' : 'Active Crops & Monitoring'}
               </h6>
               <Link to="/crops" className="btn btn-outline-success btn-sm">
-                Go to Crop Management
+                <i className="bi bi-plus-lg me-1"></i>
+                {language === 'mr' ? 'पिके व्यवस्थापित करा' : 'Manage Crops'}
               </Link>
             </div>
             <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light small text-secondary">
-                    <tr>
-                      <th className="ps-3">Crop Name</th>
-                      <th>Land Allocated</th>
-                      <th>Sowing Date</th>
-                      <th>Stage</th>
-                      <th>Crop Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="small">
-                    {recentCrops.map((crop, idx) => (
-                      <tr key={idx}>
-                        <td className="ps-3 fw-semibold text-dark">{crop.name}</td>
-                        <td>{crop.area}</td>
-                        <td>{crop.sowingDate}</td>
-                        <td>
-                          <span className="badge bg-light text-dark border">
-                            {crop.status}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="badge bg-success-subtle text-success">
-                            {crop.health}
-                          </span>
-                        </td>
+              {loading ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-success"></div>
+                  <p className="mt-2 text-muted small">{t('loading')}</p>
+                </div>
+              ) : recent_crops.length === 0 ? (
+                <div className="text-center py-5 text-muted">
+                  <i className="bi bi-seedling fs-1 d-block mb-2 text-success opacity-50"></i>
+                  <p className="mb-2">
+                    {language === 'mr' ? 'अजून कोणतीही पिके नोंदवलेली नाहीत.' : 'No active crops logged yet.'}
+                  </p>
+                  <Link to="/crops" className="btn btn-success btn-sm">
+                    <i className="bi bi-plus-lg me-1"></i>
+                    {language === 'mr' ? 'पहिले पीक जोडा' : 'Add Your First Crop'}
+                  </Link>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light small text-secondary">
+                      <tr>
+                        <th className="ps-3">{t('cropName')}</th>
+                        <th>{t('field')}</th>
+                        <th>{t('sowingDate')}</th>
+                        <th>{t('season')}</th>
+                        <th>{t('status')}</th>
+                        <th className="text-end pe-3">{t('actions')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="small">
+                      {recent_crops.map((crop) => (
+                        <tr key={crop.id}>
+                          <td className="ps-3 fw-semibold text-dark">
+                            {crop.crop_name} {crop.variety ? `(${crop.variety})` : ''}
+                          </td>
+                          <td>
+                            {crop.field_name}{' '}
+                            <span className="text-muted">({crop.field_land_area} {language === 'mr' ? 'एकर' : 'Ac'})</span>
+                          </td>
+                          <td>{crop.sowing_date}</td>
+                          <td>
+                            <span className="badge bg-primary-subtle text-primary">
+                              {crop.season}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              crop.status === 'Growing'   ? 'bg-success-subtle text-success' :
+                              crop.status === 'Harvested' ? 'bg-warning-subtle text-warning' :
+                              crop.status === 'Sown'      ? 'bg-info-subtle text-info' :
+                              'bg-secondary-subtle text-secondary'
+                            }`}>
+                              {crop.status}
+                            </span>
+                          </td>
+                          <td className="text-end pe-3">
+                            <Link
+                              to={`/expenses?crop_id=${crop.id}`}
+                              className="btn btn-sm btn-outline-secondary py-0 px-2"
+                              title={language === 'mr' ? 'खर्च पहा' : 'View Expenses'}
+                            >
+                              <i className="bi bi-wallet2"></i>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <div className="card-footer bg-white text-muted small py-2 ps-3">
-              <i className="bi bi-info-circle me-1"></i> Full crop lifecycle management will be enabled in <strong>Phase 3 (Shraddha)</strong>.
+            <div className="card-footer bg-white text-muted small py-2 ps-3 d-flex justify-content-between align-items-center">
+              <span>
+                <i className="bi bi-database-check text-success me-1"></i>
+                {language === 'mr' ? 'MySQL डेटाबेसशी जोडलेले' : 'Connected to MySQL database'} (<code>farm_db</code>)
+              </span>
+              <Link to="/crops" className="text-decoration-none text-success fw-semibold">
+                {language === 'mr' ? 'सर्व पिके पहा' : 'View all crops'} &rarr;
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <h6 className="fw-bold text-dark mb-3">
+              <i className="bi bi-lightning-charge text-warning me-2"></i>
+              {t('quickActions')}
+            </h6>
+            <div className="row g-2">
+              {[
+                { route: '/crops', icon: 'bi-flower1', label: t('addCrop'), color: 'success' },
+                { route: '/expenses', icon: 'bi-wallet2', label: t('logExpense'), color: 'danger' },
+                { route: '/harvest-sales', icon: 'bi-basket3', label: t('recordSale'), color: 'primary' },
+                { route: '/ai-crop-recommendation', icon: 'bi-cpu', label: t('aiAdvisory'), color: 'info' },
+              ].map((action) => (
+                <div key={action.route} className="col-sm-6 col-md-3">
+                  <Link
+                    to={action.route}
+                    className={`btn btn-outline-${action.color} w-100 py-2 d-flex flex-column align-items-center gap-1`}
+                  >
+                    <i className={`bi ${action.icon} fs-5`}></i>
+                    <span className="small fw-semibold">{action.label}</span>
+                  </Link>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Right Column: AI & System Readiness */}
+        {/* Right Column */}
         <div className="col-lg-4">
-          <div className="card border-0 shadow-sm rounded-3 mb-4">
+          {/* Chart.js Financial Overview Doughnut */}
+          <div className="card border-0 shadow-sm rounded-4 bg-white mb-4">
+            <div className="card-header bg-white border-bottom py-3">
+              <h6 className="fw-bold mb-0 text-dark">
+                <i className="bi bi-pie-chart-fill text-success me-2"></i>
+                {language === 'mr' ? 'आर्थिक विहंगावलोकन (Chart.js)' : 'Financial Overview (Chart.js)'}
+              </h6>
+            </div>
+            <div className="card-body">
+              {summary.total_expenses > 0 || summary.total_revenue > 0 ? (
+                <div style={{ height: '200px' }} className="d-flex justify-content-center align-items-center">
+                  <Doughnut
+                    data={{
+                      labels: [
+                        language === 'mr' ? 'खर्च' : 'Expenses',
+                        language === 'mr' ? 'महसूल' : 'Revenue',
+                      ],
+                      datasets: [
+                        {
+                          data: [summary.total_expenses, summary.total_revenue],
+                          backgroundColor: ['rgba(220, 53, 69, 0.8)', 'rgba(25, 135, 84, 0.8)'],
+                          borderColor: ['#fff', '#fff'],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'bottom' },
+                      },
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="text-muted small text-center my-3">
+                  <i className="bi bi-info-circle me-1"></i>
+                  {language === 'mr' ? 'आलेख पाहण्यासाठी खर्च किंवा विक्री जोडा' : 'Log expenses or sales to view chart'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Season Breakdown */}
+          {season_breakdown && season_breakdown.length > 0 && (
+            <div className="card border-0 shadow-sm rounded-4 bg-white mb-4">
+              <div className="card-header bg-white border-bottom py-3">
+                <h6 className="fw-bold mb-0 text-dark">
+                  <i className="bi bi-bar-chart-line text-success me-2"></i>
+                  {language === 'mr' ? 'हंगामनिहाय माहिती' : 'Season-wise Breakdown'}
+                </h6>
+              </div>
+              <div className="card-body">
+                {season_breakdown
+                  .filter((s) => s.total_expense > 0 || s.total_revenue > 0)
+                  .map((s, i) => (
+                    <div key={i} className="mb-3">
+                      <div className="d-flex justify-content-between small mb-1">
+                        <span className="fw-semibold">{s.season}</span>
+                        <span className={s.profit_loss >= 0 ? 'text-success' : 'text-danger'}>
+                          {s.profit_loss >= 0 ? '+' : ''}₹{Number(s.profit_loss).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="progress" style={{ height: '6px' }}>
+                        <div
+                          className={`progress-bar ${s.profit_loss >= 0 ? 'bg-success' : 'bg-danger'}`}
+                          style={{ width: `${Math.min(Math.abs(s.profit_loss) / Math.max(s.total_revenue, 1) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                {season_breakdown.every((s) => s.total_expense === 0 && s.total_revenue === 0) && (
+                  <p className="text-muted small text-center mb-0">
+                    {language === 'mr' ? 'अजून माहिती उपलब्ध नाही' : 'No seasonal data yet'}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* AI Modules */}
+          <div className="card border-0 shadow-sm rounded-4 bg-white mb-4">
             <div className="card-header bg-white border-bottom py-3">
               <h6 className="fw-bold mb-0 text-dark">
                 <i className="bi bi-cpu text-primary me-2"></i>
-                AI Modules Roadmap
+                AI & {language === 'mr' ? 'अनुमान मॉड्यूल्स' : 'Predictive Modules'}
               </h6>
             </div>
             <div className="card-body">
               <div className="d-flex flex-column gap-3 small">
-                <div className="p-2 border rounded-2 bg-light">
-                  <div className="d-flex justify-content-between fw-semibold">
-                    <span>1. Crop Recommendation</span>
-                    <span className="badge bg-warning text-dark">Sonali</span>
-                  </div>
-                  <p className="text-muted mb-0 small mt-1">Recommends ideal crop based on soil and climate.</p>
-                </div>
-
-                <div className="p-2 border rounded-2 bg-light">
-                  <div className="d-flex justify-content-between fw-semibold">
-                    <span>2. Yield Prediction</span>
-                    <span className="badge bg-info text-dark">Shraddha</span>
-                  </div>
-                  <p className="text-muted mb-0 small mt-1">Estimates harvest tonnage per acre using ML.</p>
-                </div>
-
-                <div className="p-2 border rounded-2 bg-light">
-                  <div className="d-flex justify-content-between fw-semibold">
-                    <span>3. Profit Prediction</span>
-                    <span className="badge bg-warning text-dark">Sonali</span>
-                  </div>
-                  <p className="text-muted mb-0 small mt-1">Forecasts expected returns based on historical trends.</p>
-                </div>
+                {[
+                  {
+                    route: '/ai-crop-recommendation',
+                    icon: '🌱',
+                    title: language === 'mr' ? 'पीक शिफारस' : 'Crop Recommendation',
+                    desc: language === 'mr'
+                      ? 'माती, पाऊस आणि हंगामावर आधारित पीक सल्ला.'
+                      : 'Advises optimal crops based on soil nutrients, rainfall & season.',
+                    badge: 'Active', badgeColor: 'bg-success-subtle text-success',
+                  },
+                  {
+                    route: '/ai-yield-prediction',
+                    icon: '📊',
+                    title: language === 'mr' ? 'उत्पन्न अंदाज' : 'Yield Prediction',
+                    desc: language === 'mr'
+                      ? 'हवामान घटकांचा वापर करून एकरी क्विंटल मोजतो.'
+                      : 'Calculates expected quintals per acre using agro-climatic factors.',
+                    badge: 'Active', badgeColor: 'bg-info-subtle text-info',
+                  },
+                  {
+                    route: '/ai-profit-prediction',
+                    icon: '💰',
+                    title: language === 'mr' ? 'नफा अंदाज' : 'Profit Prediction',
+                    desc: language === 'mr'
+                      ? 'APMC मंडी दरातून निव्वळ आर्थिक परतावा अंदाजतो.'
+                      : 'Forecasts net financial realization from yield and APMC Mandi rates.',
+                    badge: 'Active', badgeColor: 'bg-warning-subtle text-warning',
+                  },
+                ].map((mod) => (
+                  <Link key={mod.route} to={mod.route} className="text-decoration-none">
+                    <div className="p-3 border rounded-3 bg-light hover-card">
+                      <div className="d-flex justify-content-between fw-semibold">
+                        <span className="text-dark">{mod.icon} {mod.title}</span>
+                        <span className={`badge ${mod.badgeColor}`}>{mod.badge}</span>
+                      </div>
+                      <p className="text-muted mb-0 small mt-1">{mod.desc}</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="card border-0 shadow-sm rounded-3 bg-fms-primary text-white p-3">
+          {/* Project Info Card */}
+          <div className="card border-0 shadow-sm rounded-4 bg-fms-primary text-white p-4">
             <div className="d-flex align-items-center gap-3">
-              <i className="bi bi-people-fill fs-2"></i>
+              <i className="bi bi-mortarboard-fill fs-1 opacity-75"></i>
               <div>
-                <h6 className="fw-bold mb-1">MCA-II Project Team</h6>
-                <p className="small text-white-50 mb-0">
-                  Sonali B. Vidure (Team Leader)<br />
-                  Shraddha S. Gurav (Team Member)
+                <h6 className="fw-bold mb-1">MCA-II Project</h6>
+                <p className="small mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  PVPIT Budhgaon, Sangli
+                </p>
+                <p className="small mb-0" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  <strong>Sonali B. Vidure</strong> (Leader)<br />
+                  <strong>Shraddha S. Gurav</strong>
                 </p>
               </div>
             </div>

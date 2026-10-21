@@ -3,7 +3,10 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .models import FarmerProfile
+from .models import (
+    FarmerProfile, Field, Crop, Expense, Harvest, Sale,
+    FinancialAnalysis, CropRecommendation, YieldPrediction, ProfitPrediction
+)
 
 
 class ApiStatusTests(TestCase):
@@ -78,7 +81,6 @@ class FarmerAuthTests(TestCase):
         reg_response = self.client.post(self.register_url, self.valid_farmer_data, content_type='application/json')
         token = reg_response.json()['token']
 
-        # GET profile authenticated
         profile_response = self.client.get(
             self.profile_url, 
             HTTP_AUTHORIZATION=f'Token {token}'
@@ -86,7 +88,6 @@ class FarmerAuthTests(TestCase):
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
         self.assertEqual(profile_response.json()['phone'], '9876543210')
 
-        # PUT profile update
         update_response = self.client.put(
             self.profile_url,
             {'location': 'Sangli, Maharashtra', 'total_acres': '6.0'},
@@ -105,5 +106,237 @@ class FarmerAuthTests(TestCase):
             HTTP_AUTHORIZATION=f'Token {token}'
         )
         self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
-        # Token should now be removed
         self.assertFalse(Token.objects.filter(key=token).exists())
+
+
+class DomainWorkflowTests(TestCase):
+    """
+    Comprehensive tests for Phases 3 through 8:
+    Fields, Crops, Expenses, Harvests, Sales, Financials, Dashboard, and AI Modules.
+    """
+    def setUp(self):
+        # Create test farmer user
+        self.user = User.objects.create_user(username='9988776655', password='TestPassword123')
+        self.profile = FarmerProfile.objects.create(
+            user=self.user,
+            phone='9988776655',
+            location='Kolhapur',
+            total_acres=5.0
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.auth_headers = {'HTTP_AUTHORIZATION': f'Token {self.token.key}'}
+
+        # Create field
+        self.field = Field.objects.create(
+            farmer=self.user,
+            field_name='Gat No. 12',
+            land_area=2.5,
+            soil_type='Black'
+        )
+
+        # Create crop
+        self.crop = Crop.objects.create(
+            farmer=self.user,
+            field=self.field,
+            crop_name='Sugarcane',
+            variety='Co 86032',
+            season='Kharif',
+            sowing_date='2026-01-15',
+            status='Growing'
+        )
+
+    def test_field_and_crop_crud(self):
+        # 1. List fields
+        res = self.client.get(reverse('field-list-create'), **self.auth_headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.json()), 1)
+
+        # 2. Add new field
+        res = self.client.post(
+            reverse('field-list-create'),
+            {'field_name': 'South Plot', 'land_area': '1.5', 'soil_type': 'Loamy'},
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        # 3. List crops
+        res = self.client.get(reverse('crop-list-create'), **self.auth_headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.json()), 1)
+
+        # 4. Update crop status
+        res = self.client.put(
+            reverse('crop-detail', kwargs={'pk': self.crop.id}),
+            {
+                'crop_name': 'Sugarcane',
+                'variety': 'Co 86032',
+                'season': 'Kharif',
+                'sowing_date': '2026-01-15',
+                'field': self.field.id,
+                'status': 'Harvested'
+            },
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.json()['status'], 'Harvested')
+
+    def test_expense_workflow(self):
+        # Log expense
+        exp_data = {
+            'crop': self.crop.id,
+            'expense_category': 'Fertilizers',
+            'description': 'DAP and Urea for top dressing',
+            'amount': '3500.00',
+            'expense_date': '2026-02-10'
+        }
+        res = self.client.post(
+            reverse('expense-list-create'),
+            exp_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(float(res.json()['amount']), 3500.00)
+
+        # List expenses filtered by crop
+        res = self.client.get(
+            f"{reverse('expense-list-create')}?crop_id={self.crop.id}",
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.json()), 1)
+
+    def test_harvest_and_sale_workflow(self):
+        # Log harvest
+        h_data = {
+            'crop': self.crop.id,
+            'harvest_date': '2026-08-20',
+            'quantity_harvested': '250.00',
+            'unit': 'Quintals'
+        }
+        res = self.client.post(
+            reverse('harvest-list-create'),
+            h_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        harvest_id = res.json()['id']
+
+        # Log sale
+        s_data = {
+            'harvest': harvest_id,
+            'quantity_sold': '200.00',
+            'selling_price': '320.00',
+            'sale_date': '2026-08-25',
+            'buyer_name': 'Kolhapur Sugar Factory APMC'
+        }
+        res = self.client.post(
+            reverse('sale-list-create'),
+            s_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        # Verify generated total_amount: 200 * 320 = 64,000
+        self.assertEqual(float(res.json()['total_amount']), 64000.00)
+
+    def test_financial_recalculation_and_dashboard_summary(self):
+        # 1. Add expense: 10,000
+        Expense.objects.create(
+            crop=self.crop,
+            expense_category='Seeds',
+            amount=10000.00,
+            expense_date='2026-01-16'
+        )
+
+        # 2. Add harvest and sale: 50,000
+        harvest = Harvest.objects.create(
+            crop=self.crop,
+            harvest_date='2026-08-20',
+            quantity_harvested=100.00,
+            unit='Quintals'
+        )
+        Sale.objects.create(
+            harvest=harvest,
+            quantity_sold=100.00,
+            selling_price=500.00,
+            total_amount=50000.00,
+            sale_date='2026-08-25',
+            buyer_name='Trader'
+        )
+
+        # 3. Trigger financial recalculation
+        recalc_url = reverse('financial-crop', kwargs={'crop_id': self.crop.id})
+        res = self.client.post(recalc_url, **self.auth_headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        analysis = res.json()['analysis']
+        self.assertEqual(float(analysis['total_cost']), 10000.00)
+        self.assertEqual(float(analysis['total_revenue']), 50000.00)
+        self.assertEqual(float(analysis['profit_loss']), 40000.00)
+        # Cost per acre: 10000 / 2.5 = 4000
+        self.assertEqual(float(analysis['cost_per_acre']), 4000.00)
+
+        # 4. Dashboard summary
+        dash_url = reverse('dashboard-summary')
+        res = self.client.get(dash_url, **self.auth_headers)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        summary = res.json()['summary']
+        self.assertEqual(summary['total_crops'], 1)
+        self.assertEqual(summary['total_expenses'], 10000.00)
+        self.assertEqual(summary['total_revenue'], 50000.00)
+        self.assertEqual(summary['net_profit'], 40000.00)
+
+    def test_ai_modules(self):
+        # 1. AI Crop Recommendation
+        rec_data = {
+            'soil_type': 'Black',
+            'season': 'Kharif',
+            'weather_conditions': 'Warm, moderate rainfall',
+            'irrigation_type': 'Canal'
+        }
+        res = self.client.post(
+            reverse('ai-crop-rec'),
+            rec_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIn('recommended_crop', res.json()['recommendation'])
+
+        # 2. AI Yield Prediction
+        yield_data = {
+            'crop': self.crop.id,
+            'land_area': '2.5',
+            'season': 'Kharif',
+            'soil_type': 'Black',
+            'fertilizer_use': 'High (Urea + DAP)',
+            'rainfall': '850.0'
+        }
+        res = self.client.post(
+            reverse('ai-yield-pred'),
+            yield_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertGreater(float(res.json()['prediction']['predicted_yield']), 0)
+
+        # 3. AI Profit Prediction
+        profit_data = {
+            'crop': self.crop.id,
+            'estimated_cost': '15000.00',
+            'predicted_yield': '50.00',
+            'estimated_selling_price': '500.00'
+        }
+        res = self.client.post(
+            reverse('ai-profit-pred'),
+            profit_data,
+            content_type='application/json',
+            **self.auth_headers
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        # Expected profit: (50 * 500) - 15000 = 25000 - 15000 = 10000
+        self.assertEqual(float(res.json()['prediction']['predicted_profit']), 10000.00)

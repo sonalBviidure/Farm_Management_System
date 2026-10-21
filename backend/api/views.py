@@ -13,7 +13,10 @@ Phase 5  (Harvest/Sales)  — Shraddha Suresh Gurav
 Phase 8a (AI Yield Pred)  — Shraddha Suresh Gurav
 """
 
+import os
 from decimal import Decimal
+import joblib
+import pandas as pd
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -24,6 +27,24 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
+
+# Load trained Scikit-Learn pipelines
+ML_MODELS_DIR = os.path.join(settings.BASE_DIR, 'ml_models', 'saved_models')
+try:
+    CROP_REC_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'crop_recommendation_model.pkl'))
+except Exception:
+    CROP_REC_MODEL = None
+
+try:
+    YIELD_PRED_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'yield_prediction_model.pkl'))
+except Exception:
+    YIELD_PRED_MODEL = None
+
+try:
+    PROFIT_PRED_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'profit_prediction_model.pkl'))
+except Exception:
+    PROFIT_PRED_MODEL = None
+
 
 from .models import (
     FarmerProfile, Field, Crop, Expense, Harvest, Sale,
@@ -639,9 +660,21 @@ CROP_RECOMMENDATION_RULES = [
 
 def _ai_recommend_crop(soil_type, season, weather_conditions, irrigation_type):
     """
-    Rule-based crop recommender (placeholder for ML model).
-    Matches soil + season, then checks weather keywords.
+    Trained Scikit-Learn RandomForestClassifier inference with fallback.
     """
+    if CROP_REC_MODEL is not None:
+        try:
+            df = pd.DataFrame([{
+                'soil_type': soil_type,
+                'season': season,
+                'irrigation_type': irrigation_type
+            }])
+            pred = CROP_REC_MODEL.predict(df)
+            if len(pred) > 0 and pred[0]:
+                return str(pred[0])
+        except Exception:
+            pass
+
     weather_lower = weather_conditions.lower()
     # Try to find an exact or partial match
     for rule in CROP_RECOMMENDATION_RULES:
@@ -665,6 +698,7 @@ def _ai_recommend_crop(soil_type, season, weather_conditions, irrigation_type):
         'Annual': 'Sugarcane',
     }
     return season_defaults.get(season, 'Soybean')
+
 
 
 @api_view(['GET', 'POST'])
@@ -726,9 +760,24 @@ YIELD_BASE = {
 
 def _ai_predict_yield(crop_name, land_area, season, soil_type, fertilizer_use, rainfall):
     """
-    Heuristic yield prediction model (placeholder for ML / Scikit-learn pipeline).
-    Formula: base_yield_per_acre * land_area * soil_factor * fertilizer_factor * rainfall_factor
+    Trained Scikit-Learn GradientBoostingRegressor inference with domain fallback.
     """
+    if YIELD_PRED_MODEL is not None:
+        try:
+            df = pd.DataFrame([{
+                'crop_name': crop_name,
+                'soil_type': soil_type,
+                'season': season,
+                'fertilizer_use': fertilizer_use or 'Standard Balanced',
+                'land_area': float(land_area),
+                'rainfall': float(rainfall) if rainfall is not None else 650.0
+            }])
+            pred = YIELD_PRED_MODEL.predict(df)
+            if len(pred) > 0 and pred[0] > 0:
+                return round(float(pred[0]), 2)
+        except Exception:
+            pass
+
     base = YIELD_BASE.get(crop_name.lower(), 15.0)
 
     soil_factors = {'Black': 1.10, 'Alluvial': 1.15, 'Loamy': 1.05, 'Red': 0.95, 'Clayey': 1.0, 'Sandy': 0.85}
@@ -840,10 +889,26 @@ def profit_prediction(request):
         predicted_yield = serializer.validated_data['predicted_yield']
         estimated_selling_price = serializer.validated_data['estimated_selling_price']
 
-        # Predicted profit = (yield × price) − cost
+        # Exact accounting profit definition: (yield × price) − cost
         predicted_profit = round(
             (float(predicted_yield) * float(estimated_selling_price)) - float(estimated_cost), 2
         )
+
+        # Machine Learning model evaluation
+        ml_prediction = None
+        if PROFIT_PRED_MODEL is not None:
+            try:
+                df = pd.DataFrame([{
+                    'crop_name': crop.crop_name,
+                    'estimated_cost': float(estimated_cost),
+                    'predicted_yield': float(predicted_yield),
+                    'estimated_selling_price': float(estimated_selling_price),
+                }])
+                ml_pred = PROFIT_PRED_MODEL.predict(df)
+                if len(ml_pred) > 0:
+                    ml_prediction = round(float(ml_pred[0]), 2)
+            except Exception:
+                pass
 
         prediction = ProfitPrediction.objects.create(
             crop=crop,
@@ -853,7 +918,13 @@ def profit_prediction(request):
             predicted_profit=predicted_profit,
         )
 
+        resp_data = ProfitPredictionSerializer(prediction).data
+        if ml_prediction is not None:
+            resp_data['ml_predicted_profit'] = ml_prediction
+
         return Response({
             'message': 'Profit prediction calculated successfully.',
-            'prediction': ProfitPredictionSerializer(prediction).data
+            'prediction': resp_data
         }, status=status.HTTP_201_CREATED)
+
+
