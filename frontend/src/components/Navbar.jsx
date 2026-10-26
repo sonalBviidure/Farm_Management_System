@@ -31,7 +31,7 @@ const Navbar = ({ onToggleSidebar }) => {
         <div className="d-none d-sm-flex align-items-center gap-2">
           <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
             <i className="bi bi-shield-check me-1"></i>
-            MCA-II Project
+            Farm Management System
           </span>
         </div>
       </div>
@@ -67,7 +67,7 @@ const Navbar = ({ onToggleSidebar }) => {
               <div className="dropdown-item-text">
                 <div className="fw-bold">{displayName}</div>
                 <small className="text-muted">
-                  {user?.phone ? `+91 ${user.phone}` : 'MCA Group Project'}
+                  {user?.phone ? `+91 ${user.phone}` : 'Farmer Account'}
                 </small>
               </div>
             </li>

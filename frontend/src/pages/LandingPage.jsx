@@ -179,8 +179,8 @@ const LandingPage = () => {
             </h2>
             <p className="text-muted small">
               {language === 'mr'
-                ? 'MCA-II अंतिम वर्ष प्रकल्प — PVPIT बुधगाव'
-                : 'MCA-II Final Year Project — PVPIT Budhgaon'}
+                ? 'शेतकऱ्यांसाठी संपूर्ण डिजिटल कृषी व्यवस्थापन प्रणाली'
+                : 'Complete Digital Agriculture Management Platform for Farmers'}
             </p>
           </div>
 
@@ -219,37 +219,25 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── Team / Footer ────────────────────────────────────── */}
+      {/* ── Footer ────────────────────────────────────── */}
       <footer
         className="py-4"
         style={{ backgroundColor: '#1b4332', color: 'rgba(255,255,255,0.8)' }}
       >
         <div className="container">
           <div className="row align-items-center gy-3">
-            <div className="col-md-5">
+            <div className="col-md-8">
               <div className="d-flex align-items-center gap-2 mb-1">
                 <i className="bi bi-tree-fill text-success"></i>
                 <strong className="text-white">Farm Management System</strong>
               </div>
-              <small style={{ color: 'rgba(255,255,255,0.55)' }}>
+              <small style={{ color: 'rgba(255,255,255,0.65)' }}>
                 {language === 'mr'
-                  ? 'MCA-II अंतिम वर्ष गट प्रकल्प · PVPIT बुधगाव'
-                  : 'MCA-II Final Year Group Project · PVPIT Budhgaon'}
+                  ? 'शेतकऱ्यांना सक्षम बनवणारे डिजिटल शेती व्यासपीठ · पीक नोंद, उत्पन्न आणि नफा अंदाज'
+                  : 'Empowering farmers with smart crop tracking, AI advisory, and real-time market insights.'}
               </small>
             </div>
-            <div className="col-md-4">
-              <div className="d-flex align-items-center gap-2 mb-1">
-                <i className="bi bi-mortarboard-fill text-warning"></i>
-                <strong className="text-white">
-                  {language === 'mr' ? 'गट सदस्य' : 'Team Members'}
-                </strong>
-              </div>
-              <small style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Sonali Bhauso Vidure (Leader)<br />
-                Shraddha Suresh Gurav
-              </small>
-            </div>
-            <div className="col-md-3 text-md-end">
+            <div className="col-md-4 text-md-end">
               <button
                 className="lang-toggle-btn"
                 onClick={toggleLanguage}

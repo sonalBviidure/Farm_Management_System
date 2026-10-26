@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState } from 'react';
 
 // ──────────────────────────────────────────────────────────────────────────────
 //  Language Context — FMS Bilingual Support (English / Marathi)
-//  Added by: Sonali Bhauso Vidure
 // ──────────────────────────────────────────────────────────────────────────────
 
 const translations = {

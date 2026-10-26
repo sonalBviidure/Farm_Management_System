@@ -1,7 +1,7 @@
 """
 Django settings for fms_backend project.
-Farm Management System - MCA-II Group Project
-Team: Sonali Bhauso Vidure (Lead) & Shraddha Suresh Gurav
+Farm Management System - 
+Team:  (Lead) & 
 """
 
 import os
@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get(
     'SECRET_KEY', 
-    'django-insecure-fms-mca-project-key-2026-safe-dev-key'
+    'django-insecure-fms-fms-project-key-2026-safe-dev-key'
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!

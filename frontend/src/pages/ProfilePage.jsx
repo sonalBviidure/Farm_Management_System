@@ -5,7 +5,6 @@ import { getFarmerProfile, updateFarmerProfile } from '../services/api';
 
 /**
  * My Profile Page — View & Update Farmer Account
- * Phase 2 Extension — Sonali Bhauso Vidure
  */
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
@@ -156,12 +155,12 @@ export default function ProfilePage() {
 
               <hr />
 
-              {/* MCA Project Info */}
+              {/* System Info */}
               <div className="p-3 bg-light rounded-3 text-center">
-                <i className="bi bi-mortarboard-fill text-success fs-4 mb-2 d-block"></i>
-                <div className="fw-semibold text-dark small">MCA-II Group Project</div>
+                <i className="bi bi-shield-check text-success fs-4 mb-2 d-block"></i>
+                <div className="fw-semibold text-dark small">Farm Management System</div>
                 <small className="text-muted">
-                  Sonali B. Vidure<br />Shraddha S. Gurav
+                  Smart Agriculture Platform
                 </small>
               </div>
             </div>
@@ -227,7 +226,7 @@ export default function ProfilePage() {
                         value={form.location}
                         onChange={handleChange}
                         className="form-control"
-                        placeholder={language === 'mr' ? 'उदा. बुधगाव, सांगली, महाराष्ट्र' : 'e.g. Budhgaon, Sangli, Maharashtra'}
+                        placeholder={language === 'mr' ? 'उदा. सातारा, सांगली, महाराष्ट्र' : 'e.g. Satara, Sangli, Maharashtra'}
                         required
                       />
                     </div>

@@ -12,8 +12,8 @@ import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Crop & Field Management Page — CRUD
- * Phase 3 — Shraddha Suresh Gurav
- * MCA-II Project, PVPIT Budhgaon
+ * 
+ * , 
  */
 
 const STATUS_BADGES = {
@@ -200,7 +200,7 @@ export default function CropsPage() {
           <h2 className="fw-bold text-success mb-0">
             <i className="bi bi-flower1 me-2"></i>{t('cropLandManagement')}
           </h2>
-          <small className="text-muted">Phase 3 — Shraddha Suresh Gurav · MCA-II Project</small>
+          <small className="text-muted"> · </small>
         </div>
         <div className="d-flex gap-2">
           <button 

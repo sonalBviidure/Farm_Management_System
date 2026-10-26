@@ -1,16 +1,16 @@
 """
 FMS API Views — Farm Management System
 ---------------------------------------
-Phase 2  (Auth)           — Sonali Bhauso Vidure
-Phase 6  (Financial)      — Sonali Bhauso Vidure
-Phase 7  (Reports)        — Sonali Bhauso Vidure
-Phase 8b (AI Crop Rec)    — Sonali Bhauso Vidure
-Phase 8c (AI Profit Pred) — Sonali Bhauso Vidure
+Phase 2  (Auth)           — 
+Phase 6  (Financial)      — 
+Phase 7  (Reports)        — 
+Phase 8b (AI Crop Rec)    — 
+Phase 8c (AI Profit Pred) — 
 
-Phase 3  (Crops)          — Shraddha Suresh Gurav
-Phase 4  (Expenses)       — Shraddha Suresh Gurav
-Phase 5  (Harvest/Sales)  — Shraddha Suresh Gurav
-Phase 8a (AI Yield Pred)  — Shraddha Suresh Gurav
+Phase 3  (Crops)          — 
+Phase 4  (Expenses)       — 
+Phase 5  (Harvest/Sales)  — 
+Phase 8a (AI Yield Pred)  — 
 """
 
 import os
@@ -46,6 +46,7 @@ except Exception:
     PROFIT_PRED_MODEL = None
 
 
+from .market_intelligence import get_crop_field_intelligence, get_live_market_price
 from .models import (
     FarmerProfile, Field, Crop, Expense, Harvest, Sale,
     FinancialAnalysis, CropRecommendation, YieldPrediction, ProfitPrediction
@@ -67,7 +68,7 @@ from .serializers import (
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 2 — AUTH VIEWS  (Sonali)
+#  PHASE 2 — AUTH VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET'])
@@ -80,10 +81,7 @@ def api_status(request):
         'status': 'online',
         'project': 'Farm Management System (FMS)',
         'version': '3.0.0 (Phase 3-8 Modules Active)',
-        'team': {
-            'team_leader': 'Sonali Bhauso Vidure',
-            'team_member': 'Shraddha Suresh Gurav'
-        },
+        'modules': 'Operational',
         'database': {
             'engine': db_engine,
             'configured_for_mysql': settings.USE_MYSQL,
@@ -201,7 +199,7 @@ def logout_farmer(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 3 — FIELD & CROP VIEWS  (Shraddha)
+#  PHASE 3 — FIELD & CROP VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -287,7 +285,7 @@ def crop_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 4 — EXPENSE VIEWS  (Shraddha)
+#  PHASE 4 — EXPENSE VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -336,7 +334,7 @@ def expense_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 5 — HARVEST & SALE VIEWS  (Shraddha)
+#  PHASE 5 — HARVEST & SALE VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -430,7 +428,7 @@ def sale_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 6 — FINANCIAL ANALYSIS VIEWS  (Sonali)
+#  PHASE 6 — FINANCIAL ANALYSIS VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 def _recalculate_financial_analysis(crop):
@@ -517,7 +515,7 @@ def financial_analysis_for_crop(request, crop_id):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 7 — REPORTS & DASHBOARD VIEWS  (Sonali)
+#  PHASE 7 — REPORTS & DASHBOARD VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET'])
@@ -639,7 +637,7 @@ def crop_comparison_report(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8b — AI CROP RECOMMENDATION  (Sonali)
+#  PHASE 8b — AI CROP RECOMMENDATION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 # Simple rule-based AI logic (Phase 8 placeholder for ML model integration)
@@ -741,7 +739,7 @@ def crop_recommendation(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8a — AI YIELD PREDICTION  (Shraddha)
+#  PHASE 8a — AI YIELD PREDICTION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 # Yield base values per crop (quintals per acre)
@@ -859,7 +857,7 @@ def yield_prediction(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8c — AI PROFIT PREDICTION  (Sonali)
+#  PHASE 8c — AI PROFIT PREDICTION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -928,3 +926,33 @@ def profit_prediction(request):
         }, status=status.HTTP_201_CREATED)
 
 
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def crop_field_intelligence(request, crop_id):
+    """
+    Returns real field data:
+    1. Actual recorded expenses
+    2. Land area and soil characteristics
+    3. Yield estimate
+    4. Current live APMC market price for the crop
+    """
+    try:
+        crop = Crop.objects.get(id=crop_id, farmer=request.user)
+    except Crop.DoesNotExist:
+        return Response({'error': 'Crop not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+
+    intel = get_crop_field_intelligence(crop)
+    return Response(intel, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def current_market_prices(request):
+    """
+    Returns latest APMC mandi rates for all major crops.
+    """
+    crops = ['Soybean', 'Wheat', 'Sugarcane', 'Cotton', 'Rice', 'Maize', 'Groundnut', 'Gram (Chana)', 'Onion', 'Tomato']
+    results = [get_live_market_price(c) for c in crops]
+    return Response(results, status=status.HTTP_200_OK)

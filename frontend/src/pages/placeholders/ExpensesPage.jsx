@@ -4,8 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Expense Tracking Page — CRUD
- * Phase 4 — Shraddha Suresh Gurav
- * MCA-II Project, PVPIT Budhgaon
+ * 
+ * , 
  */
 
 const CATEGORY_ICONS = {
@@ -141,7 +141,7 @@ export default function ExpensesPage() {
           <h2 className="fw-bold text-success mb-0">
             <i className="bi bi-wallet2 me-2"></i>{t('expenseTracking')}
           </h2>
-          <small className="text-muted">Phase 4 — Shraddha Suresh Gurav · MCA-II Project</small>
+          <small className="text-muted"> · </small>
         </div>
         <button className="btn btn-success" onClick={openAdd} disabled={crops.length === 0}>
           <i className="bi bi-plus-lg me-1"></i>{t('addExpense')}
