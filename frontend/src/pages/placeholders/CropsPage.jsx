@@ -1,47 +1,579 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { 
+  getCrops, 
+  getFields, 
+  createCrop, 
+  updateCrop, 
+  deleteCrop,
+  createField,
+  deleteField 
+} from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
-const CropsPage = () => {
-  return (
-    <div className="container-fluid p-0">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold text-dark mb-1">Crop Management</h2>
-          <p className="text-muted mb-0 small">
-            Manage crop lifecycle, sowing schedules, varieties, and land allocation.
-          </p>
-        </div>
-        <span className="badge bg-secondary-subtle text-secondary border px-3 py-2">
-          Scheduled: Phase 3
-        </span>
-      </div>
+/**
+ * Crop & Field Management Page — CRUD
+ * 
+ * , 
+ */
 
-      <div className="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
-        <div className="mx-auto mb-3 text-success" style={{ fontSize: '3.5rem' }}>
-          <i className="bi bi-flower2"></i>
-        </div>
-        <h4 className="fw-bold text-dark">Crop Management Module</h4>
-        <p className="text-muted mx-auto" style={{ maxWidth: '580px' }}>
-          This module will be created by <strong>Shraddha Suresh Gurav</strong> in <strong>Phase 3</strong>.
-        </p>
-
-        <div className="card bg-light border-0 rounded-3 p-4 mx-auto text-start mb-4" style={{ maxWidth: '580px' }}>
-          <h6 className="fw-bold text-dark mb-2">Planned Functionalities:</h6>
-          <ul className="list-unstyled mb-0 small d-flex flex-column gap-2 text-secondary">
-            <li><i className="bi bi-check2 text-success me-2"></i>Add, view, update, and delete crop records (CRUD)</li>
-            <li><i className="bi bi-check2 text-success me-2"></i>Crop details (Variety, Sowing Date, Area in Acres, Season)</li>
-            <li><i className="bi bi-check2 text-success me-2"></i>Crop-related Django REST APIs &amp; MySQL Model</li>
-          </ul>
-        </div>
-
-        <div>
-          <Link to="/dashboard" className="btn btn-fms-primary px-4">
-            <i className="bi bi-arrow-left me-2"></i>Return to Dashboard
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+const STATUS_BADGES = {
+  Sown:      'bg-info-subtle text-info',
+  Growing:   'bg-success-subtle text-success',
+  Harvested: 'bg-warning-subtle text-warning',
+  Closed:    'bg-secondary-subtle text-secondary',
 };
 
-export default CropsPage;
+const SEASON_BADGES = {
+  Kharif: 'bg-success-subtle text-success',
+  Rabi:   'bg-primary-subtle text-primary',
+  Zaid:   'bg-warning-subtle text-warning',
+  Annual: 'bg-info-subtle text-info',
+};
+
+const emptyCropForm = {
+  crop_name: '', 
+  variety: '', 
+  season: 'Kharif',
+  sowing_date: new Date().toISOString().split('T')[0], 
+  field: '', 
+  status: 'Sown',
+};
+
+const emptyFieldForm = {
+  field_name: '',
+  land_area: '',
+  soil_type: 'Loamy',
+};
+
+const SOIL_TYPES = ['Black', 'Red', 'Loamy', 'Alluvial', 'Clayey', 'Sandy', 'Other'];
+
+export default function CropsPage() {
+  const { t, language } = useLanguage();
+  const [crops, setCrops] = useState([]);
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Crop modal state
+  const [showModal, setShowModal] = useState(false);
+  const [editingCrop, setEditingCrop] = useState(null);
+  const [form, setForm] = useState(emptyCropForm);
+  const [saving, setSaving] = useState(false);
+
+  // Field modal state
+  const [showFieldModal, setShowFieldModal] = useState(false);
+  const [fieldForm, setFieldForm] = useState(emptyFieldForm);
+  const [savingField, setSavingField] = useState(false);
+
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [filterSeason, setFilterSeason] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const [cropData, fieldData] = await Promise.all([getCrops(), getFields()]);
+      setCrops(cropData);
+      setFields(fieldData);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openAdd() {
+    setEditingCrop(null);
+    setForm({ 
+      ...emptyCropForm, 
+      field: fields[0]?.id || '',
+      sowing_date: new Date().toISOString().split('T')[0]
+    });
+    setError('');
+    setShowModal(true);
+  }
+
+  function openEdit(crop) {
+    setEditingCrop(crop);
+    setForm({
+      crop_name: crop.crop_name,
+      variety: crop.variety || '',
+      season: crop.season,
+      sowing_date: crop.sowing_date,
+      field: crop.field,
+      status: crop.status,
+    });
+    setError('');
+    setShowModal(true);
+  }
+
+  function handleChange(e) {
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const payload = { ...form, field: parseInt(form.field) };
+      if (editingCrop) {
+        await updateCrop(editingCrop.id, payload);
+        setSuccess(`✅ "${form.crop_name}" ${language === 'mr' ? 'यशस्वीरित्या अद्यतनित केले.' : 'updated successfully.'}`);
+      } else {
+        await createCrop(payload);
+        setSuccess(`✅ "${form.crop_name}" ${language === 'mr' ? 'यशस्वीरित्या जोडले.' : 'added successfully.'}`);
+      }
+      setShowModal(false);
+      await loadData();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id, name) {
+    try {
+      await deleteCrop(id);
+      setSuccess(`🗑️ "${name}" ${language === 'mr' ? 'हटवले.' : 'deleted.'}`);
+      setDeleteConfirm(null);
+      await loadData();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  // Field Management handlers
+  async function handleCreateField(e) {
+    e.preventDefault();
+    if (!fieldForm.field_name.trim() || !fieldForm.land_area) {
+      setError(language === 'mr' ? 'कृपया शेताचे नाव व एकर भरा.' : 'Please fill in field name and acreage.');
+      return;
+    }
+    setSavingField(true);
+    setError('');
+    try {
+      const created = await createField({
+        field_name: fieldForm.field_name.trim(),
+        land_area: parseFloat(fieldForm.land_area),
+        soil_type: fieldForm.soil_type,
+      });
+      setSuccess(`✅ ${language === 'mr' ? 'जमीन भूखंड' : 'Land plot'} "${created.field_name}" ${language === 'mr' ? 'जोडले.' : 'added.'}`);
+      setFieldForm(emptyFieldForm);
+      await loadData();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSavingField(false);
+    }
+  }
+
+  async function handleDeleteField(id, name) {
+    const confirmMsg = language === 'mr' 
+      ? `"${name}" हे शेत हटवायचे का? याशी संबंधित सर्व पिके देखील हटवली जातील.` 
+      : `Delete field "${name}"? All associated crops will also be deleted.`;
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      await deleteField(id);
+      setSuccess(`🗑️ ${language === 'mr' ? 'शेत' : 'Field'} "${name}" ${language === 'mr' ? 'हटवले.' : 'deleted.'}`);
+      await loadData();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  const filtered = crops.filter((c) => {
+    if (filterSeason !== 'All' && c.season !== filterSeason) return false;
+    if (filterStatus !== 'All' && c.status !== filterStatus) return false;
+    return true;
+  });
+
+  return (
+    <div className="container-fluid py-4">
+      {/* Header */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+          <h2 className="fw-bold text-success mb-0">
+            <i className="bi bi-flower1 me-2"></i>{t('cropLandManagement')}
+          </h2>
+          <small className="text-muted"> · </small>
+        </div>
+        <div className="d-flex gap-2">
+          <button 
+            className="btn btn-outline-success" 
+            onClick={() => setShowFieldModal(true)}
+          >
+            <i className="bi bi-geo-alt me-1"></i>{t('manageFields')} ({fields.length})
+          </button>
+          <button 
+            className="btn btn-success" 
+            onClick={openAdd} 
+            disabled={fields.length === 0}
+          >
+            <i className="bi bi-plus-lg me-1"></i>{t('addNewCrop')}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          <i className="bi bi-exclamation-circle me-2"></i>{error}
+          <button type="button" className="btn-close" onClick={() => setError('')}></button>
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success alert-dismissible fade show" role="alert">
+          <i className="bi bi-check-circle me-2"></i>{success}
+          <button type="button" className="btn-close" onClick={() => setSuccess('')}></button>
+        </div>
+      )}
+
+      {fields.length === 0 && !loading && (
+        <div className="alert alert-warning d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <i className="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <strong>{language === 'mr' ? 'कोणतेही शेत नोंदणीकृत नाही!' : 'No land fields registered yet!'}</strong>{' '}
+            {language === 'mr' 
+              ? 'पिके नोंदवण्यापूर्वी शेत (उदा. "उत्तर शेत - २.५ एकर") जोडणे आवश्यक आहे.' 
+              : 'You must add a field parcel (e.g. "North Plot - 2.5 Acres") before logging crops.'}
+          </div>
+          <button 
+            className="btn btn-warning btn-sm fw-semibold text-dark" 
+            onClick={() => setShowFieldModal(true)}
+          >
+            <i className="bi bi-plus-lg me-1"></i>{language === 'mr' ? 'पहिले शेत जोडा' : 'Add First Field'}
+          </button>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="card border-0 shadow-sm mb-3">
+        <div className="card-body py-2 d-flex gap-3 align-items-center flex-wrap">
+          <div className="d-flex align-items-center gap-2">
+            <label className="form-label mb-0 fw-semibold small">{t('filterBySeason')}</label>
+            <select className="form-select form-select-sm" value={filterSeason} onChange={(e) => setFilterSeason(e.target.value)}>
+              <option value="All">{t('allSeasons')}</option>
+              {['Kharif', 'Rabi', 'Zaid', 'Annual'].map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            <label className="form-label mb-0 fw-semibold small">{t('filterByStatus')}</label>
+            <select className="form-select form-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="All">{t('allStatuses')}</option>
+              {['Sown', 'Growing', 'Harvested', 'Closed'].map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <span className="ms-auto text-muted small">{filtered.length} {language === 'mr' ? 'पीक नोंदी' : 'crop(s) recorded'}</span>
+        </div>
+      </div>
+
+      {/* Crops Table */}
+      <div className="card border-0 shadow-sm">
+        <div className="card-body p-0">
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-success" role="status"></div>
+              <p className="mt-2 text-muted small">{t('loading')}</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              <i className="bi bi-seedling fs-1 d-block mb-2"></i>
+              <p className="mb-2">
+                {crops.length === 0 
+                  ? (language === 'mr' ? 'अद्याप पिके नोंदवलेली नाहीत.' : 'No crops logged yet.') 
+                  : (language === 'mr' ? 'फिल्टरशी जुळणारे पीक सापडले नाही.' : 'No crops match your filters.')}
+              </p>
+              {fields.length > 0 && crops.length === 0 && (
+                <button className="btn btn-success btn-sm" onClick={openAdd}>
+                  <i className="bi bi-plus-lg me-1"></i>{language === 'mr' ? 'पहिले पीक जोडा' : 'Add Your First Crop'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0 align-middle">
+                <thead className="table-light small">
+                  <tr>
+                    <th>#</th>
+                    <th>{t('cropName')}</th>
+                    <th>{t('variety')}</th>
+                    <th>{t('season')}</th>
+                    <th>{t('fieldParcel')}</th>
+                    <th>{t('sowingDate')}</th>
+                    <th>{t('status')}</th>
+                    <th className="text-center">{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((crop, idx) => (
+                    <tr key={crop.id}>
+                      <td className="text-muted small">{idx + 1}</td>
+                      <td className="fw-semibold text-dark">{crop.crop_name}</td>
+                      <td>{crop.variety || <span className="text-muted">—</span>}</td>
+                      <td><span className={`badge ${SEASON_BADGES[crop.season] || 'bg-secondary-subtle text-secondary'}`}>{crop.season}</span></td>
+                      <td>
+                        <i className="bi bi-geo-alt-fill text-muted me-1 small"></i>
+                        {crop.field_name} <small className="text-muted">({crop.field_land_area} {t('acres')})</small>
+                      </td>
+                      <td className="small">{crop.sowing_date}</td>
+                      <td><span className={`badge ${STATUS_BADGES[crop.status] || 'bg-secondary-subtle text-secondary'}`}>{crop.status}</span></td>
+                      <td className="text-center">
+                        <button className="btn btn-sm btn-outline-primary me-1" onClick={() => openEdit(crop)} title={t('edit')}>
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => setDeleteConfirm(crop)} title={t('delete')}>
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Field Management Modal */}
+      {showFieldModal && (
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title fw-bold">
+                  <i className="bi bi-geo-alt me-2"></i>{t('manageFields')}
+                </h5>
+                <button className="btn-close btn-close-white" onClick={() => setShowFieldModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                {/* Add Field Sub-form */}
+                <div className="card bg-light border-0 rounded-3 p-3 mb-4">
+                  <h6 className="fw-bold text-dark mb-3">
+                    {language === 'mr' ? 'नवीन शेत भूखंड जोडा' : 'Add New Land Parcel'}
+                  </h6>
+                  <form onSubmit={handleCreateField} className="row g-2 align-items-end">
+                    <div className="col-md-4">
+                      <label className="form-label small fw-semibold">
+                        {language === 'mr' ? 'शेताचे नाव *' : 'Field Name *'}
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder={language === 'mr' ? 'उदा. गट क्र. ४२ / विहीर शेत' : 'e.g. North Plot / Gat 42'}
+                        value={fieldForm.field_name}
+                        onChange={(e) => setFieldForm({ ...fieldForm, field_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label small fw-semibold">
+                        {language === 'mr' ? 'क्षेत्र (एकर) *' : 'Area (Acres) *'}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.1"
+                        className="form-control form-control-sm"
+                        placeholder="e.g. 2.5"
+                        value={fieldForm.land_area}
+                        onChange={(e) => setFieldForm({ ...fieldForm, land_area: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label small fw-semibold">
+                        {t('soilType')}
+                      </label>
+                      <select
+                        className="form-select form-select-sm"
+                        value={fieldForm.soil_type}
+                        onChange={(e) => setFieldForm({ ...fieldForm, soil_type: e.target.value })}
+                      >
+                        {SOIL_TYPES.map((st) => (
+                          <option key={st} value={st}>{st} {language === 'mr' ? 'माती' : 'Soil'}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-2">
+                      <button 
+                        type="submit" 
+                        className="btn btn-success btn-sm w-100" 
+                        disabled={savingField}
+                      >
+                        {savingField ? <span className="spinner-border spinner-border-sm"></span> : <><i className="bi bi-plus-lg me-1"></i>{t('save')}</>}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Existing Fields List */}
+                <h6 className="fw-bold text-dark mb-2">
+                  {language === 'mr' ? 'नोंदणीकृत शेते' : 'Registered Fields'} ({fields.length})
+                </h6>
+                {fields.length === 0 ? (
+                  <p className="text-muted small">
+                    {language === 'mr' ? 'अजून कोणतेही शेत जोडलेले नाही.' : 'No fields added yet. Fill in the form above to register your first plot.'}
+                  </p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-sm align-middle mb-0">
+                      <thead className="table-light small">
+                        <tr>
+                          <th>{language === 'mr' ? 'शेताचे नाव' : 'Field Name'}</th>
+                          <th>{language === 'mr' ? 'क्षेत्र' : 'Acreage'}</th>
+                          <th>{t('soilType')}</th>
+                          <th>{t('created')}</th>
+                          <th className="text-center">{t('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fields.map((f) => (
+                          <tr key={f.id}>
+                            <td className="fw-semibold">{f.field_name}</td>
+                            <td>{f.land_area} {t('acres')}</td>
+                            <td><span className="badge bg-light text-dark border">{f.soil_type}</span></td>
+                            <td className="small text-muted">{new Date(f.created_at).toLocaleDateString()}</td>
+                            <td className="text-center">
+                              <button
+                                className="btn btn-outline-danger btn-sm py-0 px-2"
+                                onClick={() => handleDeleteField(f.id, f.field_name)}
+                                title={t('delete')}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowFieldModal(false)}>{t('close')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Crop Modal */}
+      {showModal && (
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title fw-bold">
+                  <i className={`bi ${editingCrop ? 'bi-pencil' : 'bi-plus-lg'} me-2`}></i>
+                  {editingCrop ? t('editCrop') : t('addNewCrop')}
+                </h5>
+                <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+              </div>
+              <form onSubmit={handleSave}>
+                <div className="modal-body p-4">
+                  {error && <div className="alert alert-danger py-2 small">{error}</div>}
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('cropName')} *</label>
+                      <input 
+                        name="crop_name" 
+                        value={form.crop_name} 
+                        onChange={handleChange} 
+                        className="form-control" 
+                        placeholder={language === 'mr' ? 'उदा. ऊस, सोयाबीन, गहू' : 'e.g. Sugarcane, Soybean'} 
+                        required 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('variety')}</label>
+                      <input 
+                        name="variety" 
+                        value={form.variety} 
+                        onChange={handleChange} 
+                        className="form-control" 
+                        placeholder="e.g. JS 335, Co 86032" 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('season')} *</label>
+                      <select name="season" value={form.season} onChange={handleChange} className="form-select" required>
+                        {['Kharif', 'Rabi', 'Zaid', 'Annual'].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('sowingDate')} *</label>
+                      <input 
+                        type="date" 
+                        name="sowing_date" 
+                        value={form.sowing_date} 
+                        onChange={handleChange} 
+                        className="form-control" 
+                        required 
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('fieldParcel')} *</label>
+                      <select name="field" value={form.field} onChange={handleChange} className="form-select" required>
+                        <option value="">{language === 'mr' ? 'शेत निवडा...' : 'Select field...'}</option>
+                        {fields.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.field_name} ({f.land_area} {t('acres')} - {f.soil_type})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">{t('status')}</label>
+                      <select name="status" value={form.status} onChange={handleChange} className="form-select">
+                        {['Sown', 'Growing', 'Harvested', 'Closed'].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>{t('cancel')}</button>
+                  <button type="submit" className="btn btn-success" disabled={saving}>
+                    {saving ? <span className="spinner-border spinner-border-sm me-1"></span> : null}
+                    {editingCrop ? t('updateCrop') : t('saveCrop')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Crop Confirm Modal */}
+      {deleteConfirm && (
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-sm">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-danger text-white">
+                <h6 className="modal-title fw-bold"><i className="bi bi-exclamation-triangle me-2"></i>{t('confirmDelete')}</h6>
+                <button className="btn-close btn-close-white" onClick={() => setDeleteConfirm(null)}></button>
+              </div>
+              <div className="modal-body text-center py-4">
+                <p className="mb-1">{language === 'mr' ? 'हटवायचे का?' : 'Delete'} <strong>"{deleteConfirm.crop_name}"</strong>?</p>
+                <p className="text-muted small mb-0">
+                  {language === 'mr' 
+                    ? 'याशी संबंधित सर्व खर्च, काढणी आणि विक्री नोंदी देखील हटवल्या जातील.' 
+                    : 'All related expenses, harvests, and sales records will also be removed.'}
+                </p>
+              </div>
+              <div className="modal-footer justify-content-center">
+                <button className="btn btn-secondary btn-sm" onClick={() => setDeleteConfirm(null)}>{t('cancel')}</button>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.crop_name)}>
+                  <i className="bi bi-trash me-1"></i>{t('delete')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

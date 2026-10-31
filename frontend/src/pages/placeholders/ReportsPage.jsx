@@ -1,11 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { getCropComparisonReport, getFinancialSummaries, recalculateFinancial, getCrops } from '../../services/api';
+import { getCropComparisonReport, recalculateFinancial, getCrops } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
 
-/**
- * Reports & Financial Analytics Page
- * Phase 6 & 7 — Sonali Bhauso Vidure
- */
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
 export default function ReportsPage() {
+  const { t, language } = useLanguage();
+
   const [crops, setCrops] = useState([]);
   const [report, setReport] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +59,7 @@ export default function ReportsPage() {
     setError('');
     try {
       await recalculateFinancial(cropId);
-      setSuccess(`✅ Financial analysis recalculated for "${cropName}"`);
+      setSuccess(`✅ "${cropName}" ${language === 'mr' ? 'साठी आर्थिक विश्लेषण पुन्हा मोजले.' : 'financial analysis recalculated.'}`);
       await loadData();
     } catch (e) {
       setError(e.message);
@@ -55,16 +75,58 @@ export default function ReportsPage() {
   return (
     <div className="container-fluid py-4">
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
           <h2 className="fw-bold text-success mb-0">
-            <i className="bi bi-bar-chart-line me-2"></i>Financial Reports
+            <i className="bi bi-bar-chart-line me-2"></i>{t('financialReports')}
           </h2>
-          <small className="text-muted">Phase 6 &amp; 7 — Sonali Bhauso Vidure</small>
+          <small className="text-muted">Phase 6 &amp; 7 —  · </small>
         </div>
-        <button className="btn btn-outline-success" onClick={loadData} disabled={loading}>
-          <i className="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
+        <div className="d-flex gap-2">
+          {report.length > 0 && (
+            <>
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => window.print()}
+                title="Print or Save as PDF"
+              >
+                <i className="bi bi-printer me-1"></i>
+                {language === 'mr' ? 'प्रिंट / PDF' : 'Print / PDF'}
+              </button>
+              <button
+                className="btn btn-outline-success"
+                onClick={() => {
+                  const headers = ['Crop', 'Variety', 'Season', 'Field', 'Area (Acres)', 'Cost (INR)', 'Revenue (INR)', 'Profit/Loss (INR)', 'Profit/Acre (INR)'];
+                  const rows = report.map(r => [
+                    `"${r.crop_name}"`,
+                    `"${r.variety || ''}"`,
+                    `"${r.season}"`,
+                    `"${r.field_name}"`,
+                    r.land_area,
+                    r.total_cost,
+                    r.total_revenue,
+                    r.profit_loss,
+                    r.profit_per_acre
+                  ]);
+                  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement('a');
+                  link.setAttribute('href', encodedUri);
+                  link.setAttribute('download', `fms_financial_report_${new Date().toISOString().slice(0, 10)}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                <i className="bi bi-file-earmark-spreadsheet me-1"></i>
+                {language === 'mr' ? 'CSV डाउनलोड' : 'Export CSV'}
+              </button>
+            </>
+          )}
+          <button className="btn btn-outline-success" onClick={loadData} disabled={loading}>
+            <i className="bi bi-arrow-clockwise me-1"></i>{t('refresh')}
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -77,7 +139,7 @@ export default function ReportsPage() {
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
-                  <p className="mb-0 small opacity-75">Total Revenue</p>
+                  <p className="mb-0 small opacity-75">{t('totalRevenue')}</p>
                   <h3 className="fw-bold">₹{totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
                 <i className="bi bi-cash-stack fs-1 opacity-50"></i>
@@ -90,7 +152,7 @@ export default function ReportsPage() {
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
-                  <p className="mb-0 small opacity-75">Total Cost</p>
+                  <p className="mb-0 small opacity-75">{t('totalCost')}</p>
                   <h3 className="fw-bold">₹{totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
                 <i className="bi bi-receipt fs-1 opacity-50"></i>
@@ -103,8 +165,8 @@ export default function ReportsPage() {
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
-                  <p className="mb-0 small opacity-75">Net Profit / Loss</p>
-                  <h3 className="fw-bold">₹{netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
+                  <p className="mb-0 small opacity-75">{t('profitLoss')}</p>
+                  <h3 className="fw-bold">{netProfit >= 0 ? '+' : ''}₹{netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
                 </div>
                 <i className={`bi ${netProfit >= 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow'} fs-1 opacity-50`}></i>
               </div>
@@ -113,38 +175,143 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Chart.js Interactive Visualizations (Phase 7) */}
+      {report.length > 0 && (
+        <div className="row g-4 mb-4">
+          <div className="col-lg-8">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-bottom">
+                <h5 className="mb-0 fw-semibold text-dark">
+                  <i className="bi bi-bar-chart-fill me-2 text-success"></i>
+                  {language === 'mr' ? 'पीकनिहाय महसूल विरुद्ध खर्च चार्ट (Chart.js)' : 'Crop Revenue vs Cost Chart (Chart.js)'}
+                </h5>
+              </div>
+              <div className="card-body">
+                <div style={{ height: '320px' }}>
+                  <Bar
+                    data={{
+                      labels: report.map(r => r.crop_name),
+                      datasets: [
+                        {
+                          label: language === 'mr' ? 'महसूल (₹)' : 'Revenue (₹)',
+                          data: report.map(r => r.total_revenue),
+                          backgroundColor: 'rgba(25, 135, 84, 0.75)',
+                          borderColor: 'rgb(25, 135, 84)',
+                          borderWidth: 1,
+                        },
+                        {
+                          label: language === 'mr' ? 'खर्च (₹)' : 'Cost (₹)',
+                          data: report.map(r => r.total_cost),
+                          backgroundColor: 'rgba(220, 53, 69, 0.75)',
+                          borderColor: 'rgb(220, 53, 69)',
+                          borderWidth: 1,
+                        },
+                        {
+                          label: language === 'mr' ? 'नफा/तोटा (₹)' : 'Profit/Loss (₹)',
+                          data: report.map(r => r.profit_loss),
+                          backgroundColor: 'rgba(13, 110, 253, 0.75)',
+                          borderColor: 'rgb(13, 110, 253)',
+                          borderWidth: 1,
+                        }
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'top' },
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: (value) => '₹' + Number(value).toLocaleString('en-IN'),
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-lg-4">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-bottom">
+                <h5 className="mb-0 fw-semibold text-dark">
+                  <i className="bi bi-pie-chart-fill me-2 text-primary"></i>
+                  {language === 'mr' ? 'एकूण आर्थिक हिस्सा' : 'Financial Distribution'}
+                </h5>
+              </div>
+              <div className="card-body d-flex flex-column align-items-center justify-content-center">
+                <div style={{ width: '240px', height: '240px' }}>
+                  <Doughnut
+                    data={{
+                      labels: [
+                        language === 'mr' ? 'खर्च' : 'Cost',
+                        language === 'mr' ? 'नफा' : 'Net Profit'
+                      ],
+                      datasets: [{
+                        data: [totalCost, Math.max(0, netProfit)],
+                        backgroundColor: ['rgba(220, 53, 69, 0.8)', 'rgba(25, 135, 84, 0.8)'],
+                        borderColor: ['#fff', '#fff'],
+                        borderWidth: 2,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'bottom' }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="mt-3 text-center small text-muted">
+                  <span>{language === 'mr' ? 'एकूण महसूल' : 'Total Revenue'}: <strong>₹{totalRevenue.toLocaleString('en-IN')}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Crop Comparison Table */}
       <div className="card border-0 shadow-sm">
         <div className="card-header bg-white border-bottom">
           <h5 className="mb-0 fw-semibold">
-            <i className="bi bi-table me-2 text-success"></i>Crop-wise Financial Comparison
+            <i className="bi bi-table me-2 text-success"></i>{t('cropWiseComparison')}
           </h5>
         </div>
         <div className="card-body p-0">
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-success"></div>
-              <p className="mt-2 text-muted">Loading report data...</p>
+              <p className="mt-2 text-muted">{t('loading')}</p>
             </div>
           ) : report.length === 0 ? (
             <div className="text-center py-5 text-muted">
               <i className="bi bi-clipboard-data fs-1 d-block mb-2"></i>
-              <p>No financial data yet. Add expenses and sales first, then click <strong>Recalculate</strong> for each crop.</p>
+              <p>
+                {language === 'mr'
+                  ? 'अद्याप आर्थिक माहिती नाही. प्रथम खर्च व विक्री नोंदी भरा, नंतर खालील "पुन्हा गणना" वर क्लिक करा.'
+                  : 'No financial data yet. Add expenses and sales first, then click Recalculate for each crop.'}
+              </p>
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>Crop</th>
-                    <th>Season</th>
-                    <th>Field</th>
-                    <th>Area (acres)</th>
-                    <th className="text-end">Cost (₹)</th>
-                    <th className="text-end">Revenue (₹)</th>
-                    <th className="text-end">Profit/Loss (₹)</th>
-                    <th className="text-end">Profit/Acre (₹)</th>
-                    <th className="text-center">Action</th>
+                    <th>{language === 'mr' ? 'पीक' : 'Crop'}</th>
+                    <th>{t('season')}</th>
+                    <th>{t('field')}</th>
+                    <th>{t('area')} ({t('acres')})</th>
+                    <th className="text-end">{language === 'mr' ? 'खर्च' : 'Cost'} (₹)</th>
+                    <th className="text-end">{language === 'mr' ? 'महसूल' : 'Revenue'} (₹)</th>
+                    <th className="text-end">{t('profitLoss')} (₹)</th>
+                    <th className="text-end">{t('profitPerAcre')} (₹)</th>
+                    <th className="text-center">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -170,7 +337,7 @@ export default function ReportsPage() {
                         >
                           {recalculating === row.crop_id
                             ? <span className="spinner-border spinner-border-sm"></span>
-                            : <><i className="bi bi-arrow-repeat me-1"></i>Recalc</>
+                            : <><i className="bi bi-arrow-repeat me-1"></i>{t('recalculate')}</>
                           }
                         </button>
                       </td>
@@ -183,12 +350,14 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Recalculate All */}
+      {/* Recalculate All Buttons */}
       {crops.length > 0 && report.length === 0 && (
         <div className="mt-3">
           <div className="alert alert-info">
             <i className="bi bi-info-circle me-2"></i>
-            No financial data found. Click below to recalculate for all crops with recorded expenses &amp; sales.
+            {language === 'mr'
+              ? 'आर्थिक विश्लेषणाची गणना करण्यासाठी खालील पिकावर क्लिक करा.'
+              : 'Click below to recalculate financial summary for each crop with recorded expenses & sales.'}
           </div>
           <div className="d-flex gap-2 flex-wrap">
             {crops.map((crop) => (
@@ -202,7 +371,7 @@ export default function ReportsPage() {
                   ? <span className="spinner-border spinner-border-sm me-1"></span>
                   : <i className="bi bi-calculator me-1"></i>
                 }
-                Recalculate: {crop.crop_name}
+                {t('recalculate')}: {crop.crop_name}
               </button>
             ))}
           </div>

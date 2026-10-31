@@ -1,17 +1,9 @@
 # Farm Management System (FMS)
 
-An MCA-II academic project designed to help farmers manage crop cultivation lifecycles, record farming expenses, track harvest and sales, compute financial returns (cost per acre, revenue, profit/loss), and leverage AI/ML algorithms for intelligent agriculture decisions.
+A modern digital agriculture platform designed to help farmers manage crop cultivation lifecycles, record farming expenses, track harvest and sales, compute financial returns (cost per acre, revenue, profit/loss), and leverage AI/ML algorithms for intelligent agriculture decisions.
 
 ---
 
-## Team & Work Distribution
-
-| Member Name | Role | Primary Responsibilities |
-| :--- | :--- | :--- |
-| **Sonali Bhauso Vidure** | **Team Leader** | Project Architecture, Git/Repository Management, Authentication, Dashboard & Financial Analytics, Visual Reports, AI Crop Recommendation, AI Profit Prediction, and Final Integration. |
-| **Shraddha Suresh Gurav** | **Team Member** | Crop Management (CRUD), Expense Tracking (CRUD), Harvest & Sales Management, AI Yield Prediction, Module Testing, and Documentation Support. |
-
----
 
 ## Technology Stack
 
@@ -68,13 +60,13 @@ Farm-Management-System/
     │       ├── RegisterPage.jsx    # Farmer registration interface
     │       ├── DashboardPage.jsx   # Farmer dashboard with 4 metric cards
     │       └── placeholders/       # Modular placeholders for upcoming phases
-    │           ├── CropsPage.jsx           # Phase 3 (Shraddha)
-    │           ├── ExpensesPage.jsx        # Phase 4 (Shraddha)
-    │           ├── HarvestSalesPage.jsx    # Phase 5 (Shraddha)
-    │           ├── ReportsPage.jsx         # Phase 6 & 7 (Sonali)
-    │           ├── AICropRecPage.jsx       # Phase 8 (Sonali)
-    │           ├── AIYieldPredPage.jsx     # Phase 8 (Shraddha)
-    │           └── AIProfitPredPage.jsx    # Phase 8 (Sonali)
+    │           ├── CropsPage.jsx           # Phase 3 
+    │           ├── ExpensesPage.jsx        # Phase 4 
+    │           ├── HarvestSalesPage.jsx    # Phase 5 
+    │           ├── ReportsPage.jsx         # Phase 6 & 7 
+    │           ├── AICropRecPage.jsx       # Phase 8 
+    │           ├── AIYieldPredPage.jsx     # Phase 8 
+    │           └── AIProfitPredPage.jsx    # Phase 8 
 ```
 
 ---
@@ -143,31 +135,59 @@ The React frontend will be accessible in your web browser at:
 
 ## Current Status & Roadmap
 
-### What is Currently Implemented (Phase 1)
-- **Root Git Structure**: Single repository with branches (`main`, `develop`, `sonali`, `shraddha`).
-- **Django REST Framework Backend**: Django 5.0 project with CORS enabled for `localhost:5173`, PyMySQL configuration with fallback, and health check API (`/api/status/`).
-- **React.js + Bootstrap 5 Frontend**: Clean, responsive agricultural theme.
-- **Page Flow**:
-  - `Landing Page` (`/`) &rarr; Hero banner, feature highlights, links to login/register.
-  - `Login Page` (`/login`) &rarr; Clean farmer sign-in form navigating to the Dashboard.
-  - `Register Page` (`/register`) &rarr; Farmer profile registration form.
-  - `Dashboard` (`/dashboard`) &rarr; 4 KPI metric cards (Total Crops, Total Expenses, Total Revenue, Total Profit/Loss), active crops preview, and AI roadmap overview.
-  - `Sidebar Navigation & Placeholders` &rarr; Functional routing to upcoming modules with explicit owner attribution (Crops, Expenses, Harvest/Sales, Reports, AI modules).
+### What is Currently Implemented (Phases 1 through 8 Completed)
 
-### Intentionally Not Implemented in Phase 1
-- Database user models, password hashing, and JWT token authentication (**Phase 2**).
-- Crop CRUD operations and crop database models (**Phase 3**).
-- Expense category models and CRUD operations (**Phase 4**).
-- Harvest logging, sales records, and market transactions (**Phase 5**).
-- Financial calculation engines and dynamic formulas (**Phase 6**).
-- Interactive Chart.js / Recharts visualizations and comparative reports (**Phase 7**).
-- Machine learning models, training scripts, and datasets for Crop Recommendation, Yield Prediction, and Profit Prediction (**Phase 8**).
+1. **Phase 1: Architecture & Project Setup**
+   - Git repository structure for collaborative development.
+   - Django REST Framework backend with CORS and MySQL configuration with SQLite fallback.
+   - React.js frontend powered by Vite and Bootstrap 5 with responsive agricultural theming.
+
+2. **Phase 2: Authentication & Profile System **
+   - Custom `FarmerProfile` model linked to Django's built-in `User`.
+   - Token-based authentication (`rest_framework.authtoken`) for secure API communication.
+   - Farmer registration (`/api/auth/register/`), login (`/api/auth/login/`), and profile endpoints.
+   - Protected route wrappers in React and persistent token handling.
+
+3. **Phase 3: Fields & Crops Management **
+   - Land parcel models (`Field`) with soil type classification.
+   - Crop lifecycle models (`Crop`) supporting season tracking, sowing date, and crop status (`Sown`, `Growing`, `Harvested`, `Closed`).
+   - Comprehensive CRUD interfaces with modal forms in React.
+
+4. **Phase 4: Expense Tracking **
+   - Itemized expenditure model (`Expense`) across 8 agricultural categories (Seeds, Labor, Fertilizers, Pesticides, Irrigation, Machinery, Transportation, Misc).
+   - Real-time expense computation and crop-linked categorization.
+
+5. **Phase 5: Harvest & Sales Management **
+   - Yield produce logging (`Harvest`) supporting multiple units (Quintals, Tonnes, Bags, Kgs).
+   - Market trade logging (`Sale`) with automated total amount calculation (`quantity_sold * selling_price`).
+
+6. **Phase 6: Financial Calculation Engine **
+   - Dynamic financial metrics per crop cycle: Total Cost, Total Revenue, Net Profit/Loss, Cost per Acre, and Profit per Acre.
+   - On-demand calculation endpoint (`/api/financial/crop/<id>/recalculate/`).
+
+7. **Phase 7: Interactive Visualizations & Reports **
+   - **Chart.js** & **react-chartjs-2** integration:
+     - Interactive multi-dataset Bar charts comparing Revenue vs. Cost vs. Net Profit across all crops.
+     - Doughnut charts displaying financial distribution in Dashboard and Reports.
+   - **Export capabilities**: 1-click dynamic CSV export and Print/PDF generation.
+   - **Bilingual Marathi/English switch**: Full system localization with real-time language toggling.
+
+8. **Phase 8: Machine Learning Advisory Pipelines **
+   - **AI Crop Recommendation** : Trained Scikit-Learn `RandomForestClassifier` pipeline (`crop_recommendation_model.pkl`) evaluating soil type, seasonal patterns, and irrigation mode.
+   - **AI Yield Prediction** : Trained Scikit-Learn `GradientBoostingRegressor` pipeline (`yield_prediction_model.pkl`) predicting yield output based on crop variety, soil quality, fertilizer dosage, acreage, and rainfall.
+   - **AI Profit Prediction** : Trained Scikit-Learn `RandomForestRegressor` pipeline (`profit_prediction_model.pkl`) projecting agricultural margins from market APMC trends and input costs.
+   - Dedicated offline training pipeline in `backend/ml_models/train_models.py`.
 
 ---
 
-## Recommended Next Step
-**Phase 2: Authentication System** (Assigned to **Sonali Bhauso Vidure**, Team Leader)
-- Farmer custom User model / Profile in Django
-- Registration API (`/api/auth/register/`)
-- Login API with JWT / Session tokens (`/api/auth/login/`)
-- Protected route wrappers in React to secure the dashboard.
+## Machine Learning Pipeline & Training
+
+To retrain or update the Scikit-Learn pipelines:
+
+```powershell
+cd d:\SEM_3\FMS\backend
+.\venv\Scripts\python.exe ml_models\train_models.py
+```
+
+Generated `.pkl` pipelines are stored in `backend/ml_models/saved_models/` and automatically loaded by Django views on startup.
+

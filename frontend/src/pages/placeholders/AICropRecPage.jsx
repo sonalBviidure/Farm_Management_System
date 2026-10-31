@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { getCropRecommendations, submitCropRecommendation } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * AI Crop Recommendation Page
- * Phase 8b — Sonali Bhauso Vidure
+ * 
+ * , 
  */
 
 const SOIL_TYPES = ['Black', 'Red', 'Loamy', 'Alluvial', 'Clayey', 'Sandy', 'Other'];
@@ -16,6 +18,8 @@ const CROP_ICONS = {
 };
 
 export default function AICropRecPage() {
+  const { t, language } = useLanguage();
+
   const [form, setForm] = useState({
     soil_type: 'Black',
     season: 'Kharif',
@@ -51,7 +55,7 @@ export default function AICropRecPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.weather_conditions.trim()) {
-      setError('Please describe the weather conditions.');
+      setError(language === 'mr' ? 'कृपया स्थानिक हवामानाची माहिती लिहा.' : 'Please describe the weather conditions.');
       return;
     }
     setLoading(true);
@@ -73,9 +77,11 @@ export default function AICropRecPage() {
       {/* Header */}
       <div className="mb-4">
         <h2 className="fw-bold text-success mb-0">
-          <i className="bi bi-cpu me-2"></i>AI Crop Recommendation
+          <i className="bi bi-cpu me-2"></i>{t('aiCropRecTitle')}
         </h2>
-        <small className="text-muted">Phase 8b — Sonali Bhauso Vidure · Rule-based AI advisory</small>
+        <small className="text-muted">
+           · {language === 'mr' ? 'नियम-आधारित AI शेती सल्लागार' : 'Rule-based AI agronomic advisory'}
+        </small>
       </div>
 
       <div className="row g-4">
@@ -84,51 +90,53 @@ export default function AICropRecPage() {
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-success text-white">
               <h6 className="mb-0 fw-semibold">
-                <i className="bi bi-sliders me-2"></i>Enter Farm Parameters
+                <i className="bi bi-sliders me-2"></i>{t('enterFarmParams')}
               </h6>
             </div>
             <div className="card-body">
               {error && <div className="alert alert-danger py-2">{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Soil Type</label>
+                  <label className="form-label fw-semibold">{t('soilType')}</label>
                   <select name="soil_type" value={form.soil_type} onChange={handleChange} className="form-select">
-                    {SOIL_TYPES.map((s) => <option key={s} value={s}>{s} Soil</option>)}
+                    {SOIL_TYPES.map((s) => <option key={s} value={s}>{s} {language === 'mr' ? 'माती' : 'Soil'}</option>)}
                   </select>
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Season</label>
+                  <label className="form-label fw-semibold">{t('season')}</label>
                   <select name="season" value={form.season} onChange={handleChange} className="form-select">
                     {SEASONS.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Weather Conditions</label>
+                  <label className="form-label fw-semibold">{t('weatherConditions')}</label>
                   <input
                     type="text"
                     name="weather_conditions"
                     value={form.weather_conditions}
                     onChange={handleChange}
                     className="form-control"
-                    placeholder="e.g. heavy rainfall, 25-32°C, humid"
+                    placeholder={language === 'mr' ? 'उदा. मध्यम पाऊस, २५-३२°C, दमट हवामान' : 'e.g. heavy rainfall, 25-32°C, humid'}
                     required
                   />
-                  <small className="text-muted">Describe local climate: rainfall, temperature, humidity</small>
+                  <small className="text-muted">
+                    {language === 'mr' ? 'स्थानिक हवामान: पाऊस, तापमान, दमटपणा' : 'Describe local climate: rainfall, temperature, humidity'}
+                  </small>
                 </div>
 
                 <div className="mb-4">
-                  <label className="form-label fw-semibold">Irrigation Type</label>
+                  <label className="form-label fw-semibold">{t('irrigationType')}</label>
                   <select name="irrigation_type" value={form.irrigation_type} onChange={handleChange} className="form-select">
-                    {IRRIGATION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {IRRIGATION_TYPES.map((t_type) => <option key={t_type} value={t_type}>{t_type}</option>)}
                   </select>
                 </div>
 
                 <button type="submit" className="btn btn-success w-100" disabled={loading}>
                   {loading
-                    ? <><span className="spinner-border spinner-border-sm me-2"></span>Analyzing...</>
-                    : <><i className="bi bi-magic me-2"></i>Get Recommendation</>
+                    ? <><span className="spinner-border spinner-border-sm me-2"></span>{t('analyzing')}</>
+                    : <><i className="bi bi-magic me-2"></i>{t('getRecommendation')}</>
                   }
                 </button>
               </form>
@@ -145,11 +153,13 @@ export default function AICropRecPage() {
                   {CROP_ICONS[result.recommended_crop] || '🌾'}
                 </div>
                 <h2 className="fw-bold text-success mt-2">{result.recommended_crop}</h2>
-                <p className="text-muted mb-3">Recommended for your farm parameters</p>
+                <p className="text-muted mb-3">
+                  {language === 'mr' ? 'आपल्या शेताच्या माहितीसाठी शिफारस केलेले पीक' : 'Recommended for your farm parameters'}
+                </p>
                 <div className="row g-2 justify-content-center">
                   <div className="col-auto">
                     <span className="badge bg-success-subtle text-success px-3 py-2">
-                      <i className="bi bi-layers me-1"></i>{result.soil_type} Soil
+                      <i className="bi bi-layers me-1"></i>{result.soil_type} {language === 'mr' ? 'माती' : 'Soil'}
                     </span>
                   </div>
                   <div className="col-auto">
@@ -165,7 +175,7 @@ export default function AICropRecPage() {
                 </div>
                 <p className="mt-3 text-muted small">
                   <i className="bi bi-clock me-1"></i>
-                  Generated: {new Date(result.recommendation_date).toLocaleString()}
+                  {language === 'mr' ? 'निर्मिती वेळ:' : 'Generated:'} {new Date(result.recommendation_date).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -175,7 +185,7 @@ export default function AICropRecPage() {
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-white border-bottom">
               <h6 className="mb-0 fw-semibold">
-                <i className="bi bi-clock-history me-2 text-success"></i>Recommendation History
+                <i className="bi bi-clock-history me-2 text-success"></i>{t('recommendationHistory')}
               </h6>
             </div>
             <div className="card-body p-0">
@@ -184,7 +194,7 @@ export default function AICropRecPage() {
               ) : history.length === 0 ? (
                 <div className="text-center py-4 text-muted">
                   <i className="bi bi-inbox fs-4 d-block mb-1"></i>
-                  No recommendations yet. Submit your first query above.
+                  {language === 'mr' ? 'अद्याप कोणत्याही शिफारसी नाहीत.' : 'No recommendations yet. Submit your first query above.'}
                 </div>
               ) : (
                 <div className="list-group list-group-flush">

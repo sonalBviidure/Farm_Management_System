@@ -7,7 +7,7 @@ from .models import (
 
 
 # ─────────────────────────────────────────────────────────────────
-# Auth / Farmer Profile Serializers  (Phase 2 — Sonali)
+# Auth / Farmer Profile Serializers  ()
 # ─────────────────────────────────────────────────────────────────
 
 class FarmerProfileSerializer(serializers.ModelSerializer):
@@ -105,7 +105,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Field & Crop Serializers  (Phase 3 — Shraddha)
+# Field & Crop Serializers  ()
 # ─────────────────────────────────────────────────────────────────
 
 class FieldSerializer(serializers.ModelSerializer):
@@ -135,7 +135,7 @@ class CropSerializer(serializers.ModelSerializer):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Expense Serializer  (Phase 4 — Shraddha)
+# Expense Serializer  ()
 # ─────────────────────────────────────────────────────────────────
 
 class ExpenseSerializer(serializers.ModelSerializer):
@@ -155,7 +155,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Harvest & Sale Serializers  (Phase 5 — Shraddha)
+# Harvest & Sale Serializers  ()
 # ─────────────────────────────────────────────────────────────────
 
 class SaleSerializer(serializers.ModelSerializer):
@@ -187,7 +187,7 @@ class HarvestSerializer(serializers.ModelSerializer):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Financial Analysis Serializer  (Phase 6 — Sonali)
+# Financial Analysis Serializer  ()
 # ─────────────────────────────────────────────────────────────────
 
 class FinancialAnalysisSerializer(serializers.ModelSerializer):
@@ -205,11 +205,11 @@ class FinancialAnalysisSerializer(serializers.ModelSerializer):
 
 
 # ─────────────────────────────────────────────────────────────────
-# AI Serializers  (Phase 8 — Sonali & Shraddha)
+# AI Serializers  ( & )
 # ─────────────────────────────────────────────────────────────────
 
 class CropRecommendationSerializer(serializers.ModelSerializer):
-    """Phase 8b — Sonali: AI Crop Recommendation input/output."""
+    """: AI Crop Recommendation input/output."""
 
     class Meta:
         model = CropRecommendation
@@ -221,7 +221,7 @@ class CropRecommendationSerializer(serializers.ModelSerializer):
 
 
 class YieldPredictionSerializer(serializers.ModelSerializer):
-    """Phase 8a — Shraddha: AI Yield Prediction input/output."""
+    """: AI Yield Prediction input/output."""
     crop_name = serializers.CharField(source='crop.crop_name', read_only=True)
 
     class Meta:
@@ -235,7 +235,7 @@ class YieldPredictionSerializer(serializers.ModelSerializer):
 
 
 class ProfitPredictionSerializer(serializers.ModelSerializer):
-    """Phase 8c — Sonali: AI Profit Prediction input/output."""
+    """: AI Profit Prediction input/output."""
     crop_name = serializers.CharField(source='crop.crop_name', read_only=True)
 
     class Meta:

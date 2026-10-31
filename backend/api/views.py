@@ -1,19 +1,22 @@
 """
 FMS API Views — Farm Management System
 ---------------------------------------
-Phase 2  (Auth)           — Sonali Bhauso Vidure
-Phase 6  (Financial)      — Sonali Bhauso Vidure
-Phase 7  (Reports)        — Sonali Bhauso Vidure
-Phase 8b (AI Crop Rec)    — Sonali Bhauso Vidure
-Phase 8c (AI Profit Pred) — Sonali Bhauso Vidure
+Phase 2  (Auth)           — 
+Phase 6  (Financial)      — 
+Phase 7  (Reports)        — 
+Phase 8b (AI Crop Rec)    — 
+Phase 8c (AI Profit Pred) — 
 
-Phase 3  (Crops)          — Shraddha Suresh Gurav
-Phase 4  (Expenses)       — Shraddha Suresh Gurav
-Phase 5  (Harvest/Sales)  — Shraddha Suresh Gurav
-Phase 8a (AI Yield Pred)  — Shraddha Suresh Gurav
+Phase 3  (Crops)          — 
+Phase 4  (Expenses)       — 
+Phase 5  (Harvest/Sales)  — 
+Phase 8a (AI Yield Pred)  — 
 """
 
+import os
 from decimal import Decimal
+import joblib
+import pandas as pd
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +28,25 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 
+# Load trained Scikit-Learn pipelines
+ML_MODELS_DIR = os.path.join(settings.BASE_DIR, 'ml_models', 'saved_models')
+try:
+    CROP_REC_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'crop_recommendation_model.pkl'))
+except Exception:
+    CROP_REC_MODEL = None
+
+try:
+    YIELD_PRED_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'yield_prediction_model.pkl'))
+except Exception:
+    YIELD_PRED_MODEL = None
+
+try:
+    PROFIT_PRED_MODEL = joblib.load(os.path.join(ML_MODELS_DIR, 'profit_prediction_model.pkl'))
+except Exception:
+    PROFIT_PRED_MODEL = None
+
+
+from .market_intelligence import get_crop_field_intelligence, get_live_market_price
 from .models import (
     FarmerProfile, Field, Crop, Expense, Harvest, Sale,
     FinancialAnalysis, CropRecommendation, YieldPrediction, ProfitPrediction
@@ -46,7 +68,7 @@ from .serializers import (
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 2 — AUTH VIEWS  (Sonali)
+#  PHASE 2 — AUTH VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET'])
@@ -59,10 +81,7 @@ def api_status(request):
         'status': 'online',
         'project': 'Farm Management System (FMS)',
         'version': '3.0.0 (Phase 3-8 Modules Active)',
-        'team': {
-            'team_leader': 'Sonali Bhauso Vidure',
-            'team_member': 'Shraddha Suresh Gurav'
-        },
+        'modules': 'Operational',
         'database': {
             'engine': db_engine,
             'configured_for_mysql': settings.USE_MYSQL,
@@ -180,7 +199,7 @@ def logout_farmer(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 3 — FIELD & CROP VIEWS  (Shraddha)
+#  PHASE 3 — FIELD & CROP VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -266,7 +285,7 @@ def crop_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 4 — EXPENSE VIEWS  (Shraddha)
+#  PHASE 4 — EXPENSE VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -315,7 +334,7 @@ def expense_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 5 — HARVEST & SALE VIEWS  (Shraddha)
+#  PHASE 5 — HARVEST & SALE VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -409,7 +428,7 @@ def sale_detail(request, pk):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 6 — FINANCIAL ANALYSIS VIEWS  (Sonali)
+#  PHASE 6 — FINANCIAL ANALYSIS VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 def _recalculate_financial_analysis(crop):
@@ -496,7 +515,7 @@ def financial_analysis_for_crop(request, crop_id):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 7 — REPORTS & DASHBOARD VIEWS  (Sonali)
+#  PHASE 7 — REPORTS & DASHBOARD VIEWS  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET'])
@@ -618,7 +637,7 @@ def crop_comparison_report(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8b — AI CROP RECOMMENDATION  (Sonali)
+#  PHASE 8b — AI CROP RECOMMENDATION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 # Simple rule-based AI logic (Phase 8 placeholder for ML model integration)
@@ -639,9 +658,21 @@ CROP_RECOMMENDATION_RULES = [
 
 def _ai_recommend_crop(soil_type, season, weather_conditions, irrigation_type):
     """
-    Rule-based crop recommender (placeholder for ML model).
-    Matches soil + season, then checks weather keywords.
+    Trained Scikit-Learn RandomForestClassifier inference with fallback.
     """
+    if CROP_REC_MODEL is not None:
+        try:
+            df = pd.DataFrame([{
+                'soil_type': soil_type,
+                'season': season,
+                'irrigation_type': irrigation_type
+            }])
+            pred = CROP_REC_MODEL.predict(df)
+            if len(pred) > 0 and pred[0]:
+                return str(pred[0])
+        except Exception:
+            pass
+
     weather_lower = weather_conditions.lower()
     # Try to find an exact or partial match
     for rule in CROP_RECOMMENDATION_RULES:
@@ -665,6 +696,7 @@ def _ai_recommend_crop(soil_type, season, weather_conditions, irrigation_type):
         'Annual': 'Sugarcane',
     }
     return season_defaults.get(season, 'Soybean')
+
 
 
 @api_view(['GET', 'POST'])
@@ -707,7 +739,7 @@ def crop_recommendation(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8a — AI YIELD PREDICTION  (Shraddha)
+#  PHASE 8a — AI YIELD PREDICTION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 # Yield base values per crop (quintals per acre)
@@ -726,9 +758,24 @@ YIELD_BASE = {
 
 def _ai_predict_yield(crop_name, land_area, season, soil_type, fertilizer_use, rainfall):
     """
-    Heuristic yield prediction model (placeholder for ML / Scikit-learn pipeline).
-    Formula: base_yield_per_acre * land_area * soil_factor * fertilizer_factor * rainfall_factor
+    Trained Scikit-Learn GradientBoostingRegressor inference with domain fallback.
     """
+    if YIELD_PRED_MODEL is not None:
+        try:
+            df = pd.DataFrame([{
+                'crop_name': crop_name,
+                'soil_type': soil_type,
+                'season': season,
+                'fertilizer_use': fertilizer_use or 'Standard Balanced',
+                'land_area': float(land_area),
+                'rainfall': float(rainfall) if rainfall is not None else 650.0
+            }])
+            pred = YIELD_PRED_MODEL.predict(df)
+            if len(pred) > 0 and pred[0] > 0:
+                return round(float(pred[0]), 2)
+        except Exception:
+            pass
+
     base = YIELD_BASE.get(crop_name.lower(), 15.0)
 
     soil_factors = {'Black': 1.10, 'Alluvial': 1.15, 'Loamy': 1.05, 'Red': 0.95, 'Clayey': 1.0, 'Sandy': 0.85}
@@ -810,7 +857,7 @@ def yield_prediction(request):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  PHASE 8c — AI PROFIT PREDICTION  (Sonali)
+#  PHASE 8c — AI PROFIT PREDICTION  ()
 # ═══════════════════════════════════════════════════════════════════
 
 @api_view(['GET', 'POST'])
@@ -840,10 +887,26 @@ def profit_prediction(request):
         predicted_yield = serializer.validated_data['predicted_yield']
         estimated_selling_price = serializer.validated_data['estimated_selling_price']
 
-        # Predicted profit = (yield × price) − cost
+        # Exact accounting profit definition: (yield × price) − cost
         predicted_profit = round(
             (float(predicted_yield) * float(estimated_selling_price)) - float(estimated_cost), 2
         )
+
+        # Machine Learning model evaluation
+        ml_prediction = None
+        if PROFIT_PRED_MODEL is not None:
+            try:
+                df = pd.DataFrame([{
+                    'crop_name': crop.crop_name,
+                    'estimated_cost': float(estimated_cost),
+                    'predicted_yield': float(predicted_yield),
+                    'estimated_selling_price': float(estimated_selling_price),
+                }])
+                ml_pred = PROFIT_PRED_MODEL.predict(df)
+                if len(ml_pred) > 0:
+                    ml_prediction = round(float(ml_pred[0]), 2)
+            except Exception:
+                pass
 
         prediction = ProfitPrediction.objects.create(
             crop=crop,
@@ -853,7 +916,43 @@ def profit_prediction(request):
             predicted_profit=predicted_profit,
         )
 
+        resp_data = ProfitPredictionSerializer(prediction).data
+        if ml_prediction is not None:
+            resp_data['ml_predicted_profit'] = ml_prediction
+
         return Response({
             'message': 'Profit prediction calculated successfully.',
-            'prediction': ProfitPredictionSerializer(prediction).data
+            'prediction': resp_data
         }, status=status.HTTP_201_CREATED)
+
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def crop_field_intelligence(request, crop_id):
+    """
+    Returns real field data:
+    1. Actual recorded expenses
+    2. Land area and soil characteristics
+    3. Yield estimate
+    4. Current live APMC market price for the crop
+    """
+    try:
+        crop = Crop.objects.get(id=crop_id, farmer=request.user)
+    except Crop.DoesNotExist:
+        return Response({'error': 'Crop not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+
+    intel = get_crop_field_intelligence(crop)
+    return Response(intel, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def current_market_prices(request):
+    """
+    Returns latest APMC mandi rates for all major crops.
+    """
+    crops = ['Soybean', 'Wheat', 'Sugarcane', 'Cotton', 'Rice', 'Maize', 'Groundnut', 'Gram (Chana)', 'Onion', 'Tomato']
+    results = [get_live_market_price(c) for c in crops]
+    return Response(results, status=status.HTTP_200_OK)

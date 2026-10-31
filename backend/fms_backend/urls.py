@@ -1,6 +1,6 @@
 """
 URL configuration for fms_backend project.
-Farm Management System - MCA-II Group Project
+Farm Management System - 
 """
 from django.contrib import admin
 from django.urls import path, include
