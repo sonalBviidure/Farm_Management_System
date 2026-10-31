@@ -4,8 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * AI Crop Yield Prediction Page
- * Phase 8a — Shraddha Suresh Gurav
- * MCA-II Project, PVPIT Budhgaon
+ * 
+ * , 
  */
 
 const SOIL_TYPES = ['Black', 'Alluvial', 'Loamy', 'Red', 'Clayey', 'Sandy', 'Other'];
@@ -134,7 +134,7 @@ export default function AIYieldPredPage() {
         </div>
         <div>
           <span className="badge bg-info-subtle text-info-emphasis border border-info px-3 py-2">
-            Phase 8a — Shraddha Suresh Gurav · MCA-II
+             · 
           </span>
         </div>
       </div>

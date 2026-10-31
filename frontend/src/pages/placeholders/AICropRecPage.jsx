@@ -4,8 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * AI Crop Recommendation Page
- * Phase 8b — Sonali Bhauso Vidure
- * MCA-II Project, PVPIT Budhgaon
+ * 
+ * , 
  */
 
 const SOIL_TYPES = ['Black', 'Red', 'Loamy', 'Alluvial', 'Clayey', 'Sandy', 'Other'];
@@ -80,7 +80,7 @@ export default function AICropRecPage() {
           <i className="bi bi-cpu me-2"></i>{t('aiCropRecTitle')}
         </h2>
         <small className="text-muted">
-          Phase 8b — Sonali Bhauso Vidure · {language === 'mr' ? 'नियम-आधारित AI शेती सल्लागार' : 'Rule-based AI agronomic advisory'}
+           · {language === 'mr' ? 'नियम-आधारित AI शेती सल्लागार' : 'Rule-based AI agronomic advisory'}
         </small>
       </div>
 

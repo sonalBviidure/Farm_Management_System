@@ -231,7 +231,7 @@ const RegisterPage = () => {
 
             <div className="text-center mt-4">
               <small className="text-white-50">
-                MCA-II Project &bull; Sonali B. Vidure (Lead) &amp; Shraddha S. Gurav · PVPIT Budhgaon
+                Farm Management System &bull; Intelligent Agricultural Advisory Platform
               </small>
             </div>
           </div>

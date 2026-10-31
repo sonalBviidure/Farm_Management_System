@@ -4,8 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Harvest & Sales Management Page
- * Phase 5 — Shraddha Suresh Gurav
- * MCA-II Project, PVPIT Budhgaon
+ * 
+ * , 
  */
 
 const UNIT_LABELS = { Quintals: 'Qtl', Tonnes: 'T', Bags: 'Bags', Kgs: 'Kg' };
@@ -169,7 +169,7 @@ export default function HarvestSalesPage() {
           <h2 className="fw-bold text-success mb-0">
             <i className="bi bi-shop me-2"></i>{t('harvestSalesTitle')}
           </h2>
-          <small className="text-muted">Phase 5 — Shraddha Suresh Gurav · MCA-II Project</small>
+          <small className="text-muted"> · </small>
         </div>
         <div className="d-flex gap-2">
           <button className="btn btn-outline-success" onClick={openHarvestModal} disabled={crops.length === 0}>

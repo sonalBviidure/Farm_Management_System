@@ -2,13 +2,13 @@
  * API Service — Farm Management System (FMS)
  * All HTTP calls to Django REST Framework backend.
  *
- * Phase 2  (Auth)          — Sonali
- * Phase 3  (Fields/Crops)  — Shraddha
- * Phase 4  (Expenses)      — Shraddha
- * Phase 5  (Harvest/Sales) — Shraddha
- * Phase 6  (Financial)     — Sonali
- * Phase 7  (Reports)       — Sonali
- * Phase 8  (AI)            — Sonali & Shraddha
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
  */
 
 export const API_BASE_URL = '/api';
@@ -40,7 +40,7 @@ async function handleResponse(response) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 2 — Auth  (Sonali)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getBackendStatus() {
@@ -96,7 +96,7 @@ export async function logoutFarmer() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 3 — Fields  (Shraddha)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getFields() {
@@ -127,7 +127,7 @@ export async function deleteField(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 3 — Crops  (Shraddha)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getCrops() {
@@ -163,7 +163,7 @@ export async function deleteCrop(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 4 — Expenses  (Shraddha)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getExpenses(cropId = null) {
@@ -197,7 +197,7 @@ export async function deleteExpense(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 5 — Harvests  (Shraddha)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getHarvests(cropId = null) {
@@ -224,7 +224,7 @@ export async function deleteHarvest(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 5 — Sales  (Shraddha)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getSales(harvestId = null) {
@@ -251,7 +251,7 @@ export async function deleteSale(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 6 — Financial Analysis  (Sonali)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getFinancialSummaries() {
@@ -272,7 +272,7 @@ export async function recalculateFinancial(cropId) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 7 — Reports  (Sonali)
+
 // ─────────────────────────────────────────────────────────────────
 
 export async function getDashboardSummary() {
@@ -286,10 +286,10 @@ export async function getCropComparisonReport() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  Phase 8 — AI Modules
+
 // ─────────────────────────────────────────────────────────────────
 
-// 8b — Crop Recommendation (Sonali)
+
 export async function getCropRecommendations() {
   const res = await fetch(`${API_BASE_URL}/ai/crop-recommendation/`, { headers: getAuthHeaders() });
   return handleResponse(res);
@@ -302,7 +302,7 @@ export async function submitCropRecommendation(data) {
   return handleResponse(res);
 }
 
-// 8a — Yield Prediction (Shraddha)
+
 export async function getYieldPredictions() {
   const res = await fetch(`${API_BASE_URL}/ai/yield-prediction/`, { headers: getAuthHeaders() });
   return handleResponse(res);
@@ -315,7 +315,7 @@ export async function submitYieldPrediction(data) {
   return handleResponse(res);
 }
 
-// 8c — Profit Prediction (Sonali)
+
 export async function getProfitPredictions() {
   const res = await fetch(`${API_BASE_URL}/ai/profit-prediction/`, { headers: getAuthHeaders() });
   return handleResponse(res);
@@ -325,5 +325,17 @@ export async function submitProfitPrediction(data) {
   const res = await fetch(`${API_BASE_URL}/ai/profit-prediction/`, {
     method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data),
   });
+  return handleResponse(res);
+}
+
+
+
+export async function getCropFieldIntelligence(cropId) {
+  const res = await fetch(`${API_BASE_URL}/ai/crop-intelligence/${cropId}/`, { headers: getAuthHeaders() });
+  return handleResponse(res);
+}
+
+export async function getMarketPrices() {
+  const res = await fetch(`${API_BASE_URL}/ai/market-prices/`);
   return handleResponse(res);
 }

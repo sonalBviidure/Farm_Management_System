@@ -469,18 +469,17 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          {/* Project Info Card */}
+          {/* System Info Card */}
           <div className="card border-0 shadow-sm rounded-4 bg-fms-primary text-white p-4">
             <div className="d-flex align-items-center gap-3">
-              <i className="bi bi-mortarboard-fill fs-1 opacity-75"></i>
+              <i className="bi bi-shield-check fs-1 opacity-75"></i>
               <div>
-                <h6 className="fw-bold mb-1">MCA-II Project</h6>
+                <h6 className="fw-bold mb-1">Farm Management System</h6>
                 <p className="small mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  PVPIT Budhgaon, Sangli
+                  Intelligent Agri-Tech Platform
                 </p>
                 <p className="small mb-0" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                  <strong>Sonali B. Vidure</strong> (Leader)<br />
-                  <strong>Shraddha S. Gurav</strong>
+                  Empowering farmers with smart yield prediction, live market prices, and financial intelligence.
                 </p>
               </div>
             </div>

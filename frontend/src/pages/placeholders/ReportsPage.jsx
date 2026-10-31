@@ -80,7 +80,7 @@ export default function ReportsPage() {
           <h2 className="fw-bold text-success mb-0">
             <i className="bi bi-bar-chart-line me-2"></i>{t('financialReports')}
           </h2>
-          <small className="text-muted">Phase 6 &amp; 7 — Sonali Bhauso Vidure · MCA-II Project</small>
+          <small className="text-muted">Phase 6 &amp; 7 —  · </small>
         </div>
         <div className="d-flex gap-2">
           {report.length > 0 && (

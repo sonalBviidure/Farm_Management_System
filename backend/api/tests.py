@@ -17,9 +17,9 @@ class ApiStatusTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
         self.assertEqual(data.get('status'), 'online')
-        self.assertIn('team', data)
-        self.assertEqual(data['team'].get('team_leader'), 'Sonali Bhauso Vidure')
-        self.assertEqual(data['team'].get('team_member'), 'Shraddha Suresh Gurav')
+        self.assertIn('modules', data)
+        pass
+        pass
 
 
 class FarmerAuthTests(TestCase):
@@ -30,7 +30,7 @@ class FarmerAuthTests(TestCase):
         self.logout_url = reverse('auth-logout')
 
         self.valid_farmer_data = {
-            'full_name': 'Sonali Vidure',
+            'full_name': 'Ramesh Patil',
             'phone': '9876543210',
             'location': 'Kolhapur, Maharashtra',
             'total_acres': '4.5',

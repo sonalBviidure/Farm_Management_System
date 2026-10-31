@@ -168,7 +168,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             {language === 'en' ? '🇮🇳 मराठी' : '🇬🇧 English'}
           </button>
           <div className="sidebar-footer-text mt-2">
-            MCA-II · PVPIT Budhgaon
+            Smart Agriculture Advisory
           </div>
         </div>
       </aside>
